@@ -1,0 +1,23 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: #f8f8f8;
+    --surface: #ffffff;
+    --foreground: #1a1a1a;
+    --deleted: #ef4444;
+    --selected: #dbeafe;
+    --primary: #2563eb;
+  }
+  html, body { height: 100%; margin: 0; padding: 0; }
+  * { box-sizing: border-box; }
+}
+
+@layer components {
+  .word-token { @apply inline-block px-0.5 py-0.5 rounded cursor-pointer select-none; }
+  .word-token.deleted { @apply line-through text-gray-400 opacity-60; }
+  .word-token.selected { @apply bg-blue-100; }
+  .word-token.current { @apply bg-blue-200; }
+}
