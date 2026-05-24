@@ -11,6 +11,7 @@ interface WordTokenProps {
   isCurrent: boolean;
   onClick: (e: React.MouseEvent) => void;
   onRestoreClick: (e: React.MouseEvent) => void;
+  onMouseEnter: () => void;
 }
 
 const WordToken = memo(function WordToken({
@@ -22,6 +23,7 @@ const WordToken = memo(function WordToken({
   isCurrent,
   onClick,
   onRestoreClick,
+  onMouseEnter,
 }: WordTokenProps) {
   let className = "word-token transition-colors duration-150 ";
   if (isDeleted) className += "deleted ";
@@ -32,6 +34,7 @@ const WordToken = memo(function WordToken({
     <span
       className={className}
       onClick={isDeleted ? onRestoreClick : onClick}
+      onMouseEnter={onMouseEnter}
       title={`${start.toFixed(2)}s → ${end.toFixed(2)}s`}
     >
       {word}{" "}

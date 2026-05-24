@@ -12,7 +12,7 @@ export default function TranscriptEditor() {
   const selectionStart = useRef<number | null>(null);
 
   const currentWordIndex = transcript.findIndex(
-    (w.start <= playback.currentTime && playback.currentTime < w.end && !w.isDeleted)
+    (w) => w.start <= playback.currentTime && playback.currentTime < w.end && !w.isDeleted
   );
 
   // Auto-scroll to current playback position
@@ -119,6 +119,7 @@ export default function TranscriptEditor() {
           isCurrent={currentWordIndex === index}
           onClick={(e) => handleWordMouseDown(index, e)}
           onRestoreClick={(e) => handleRestore(index, e)}
+          onMouseEnter={() => handleWordMouseEnter(index)}
         />
       ))}
     </div>
