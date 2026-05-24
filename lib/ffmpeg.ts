@@ -59,7 +59,7 @@ export async function exportTrimmedAudio(
   await ff.deleteFile("output.mp3").catch(() => {});
   await ff.deleteFile("input.mp3").catch(() => {});
 
-  return new Blob([data], { type: "audio/mpeg" });
+  return new Blob([data as unknown as BlobPart], { type: "audio/mpeg" });
 }
 
 export function generateSRT(
