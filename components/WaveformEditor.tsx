@@ -14,6 +14,9 @@ export default function WaveformEditor() {
   const regionsPluginRef = useRef<RegionsPlugin | null>(null);
   const objectUrlRef = useRef<string | null>(null);
 
+  const MIN_ZOOM = 10;
+  const MAX_ZOOM = 500;
+
   useEffect(() => {
     if (!containerRef.current) return;
 
@@ -51,6 +54,17 @@ export default function WaveformEditor() {
 
     ws.on("play", () => setPlayback({ isPlaying: true }));
     ws.on("pause", () => setPlayback({ isPlaying: false }));
+
+    const handleWheel = (e: WheelEvent) => {
+      if (!ws) return;
+      if (!e.ctrlKey && !e.metaKey && !e.shiftKey) return;
+      e.preventDefault();
+      const delta = e.deltaY < 0 ? 10 : -10;
+      const newZoom = Math.max(MIN_ZOOM, Math.min(ws.options.minPxPerSec! + delta, MAX_ZOOM));
+      ws.zoom(newZoom);
+    };
+
+    containerRef.current.addEventListener("wheel", handleWheel, { passive: false });
 
     return () => {
       ws.destroy();
