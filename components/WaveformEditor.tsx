@@ -22,7 +22,7 @@ export default function WaveformEditor() {
 
     const ws = WaveSurfer.create({
       container: containerRef.current,
-      waveColor: "#d1d5db",
+      waveColor: "#52525b",
       progressColor: "#6366f1",
       cursorColor: "#4f46e5",
       cursorWidth: 2,
@@ -58,9 +58,13 @@ export default function WaveformEditor() {
     const handleWheel = (e: WheelEvent) => {
       if (!ws) return;
       if (!e.ctrlKey && !e.metaKey && !e.shiftKey) return;
+
       e.preventDefault();
-      const delta = e.deltaY < 0 ? 10 : -10;
-      const newZoom = Math.max(MIN_ZOOM, Math.min(ws.options.minPxPerSec! + delta, MAX_ZOOM));
+
+      const currentZoom = ws.options.minPxPerSec ?? 50;
+      const zoomDelta = Math.abs(e.deltaY) > 50 ? (e.deltaY < 0 ? 20 : -10) : (e.deltaY < 0 ? 5 : -5);
+      const newZoom = Math.max(MIN_ZOOM, Math.min(currentZoom + zoomDelta, MAX_ZOOM));
+
       ws.zoom(newZoom);
     };
 
@@ -68,6 +72,9 @@ export default function WaveformEditor() {
 
     return () => {
       ws.destroy();
+      if (containerRef.current) {
+        containerRef.current.removeEventListener("wheel", handleWheel);
+      }
       wavesurferRef.current = null;
       regionsPluginRef.current = null;
     };
