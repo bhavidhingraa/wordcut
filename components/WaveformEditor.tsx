@@ -74,7 +74,7 @@ export default function WaveformEditor() {
     containerRef.current.addEventListener("wheel", handleWheel, { passive: false });
 
     return () => {
-      ws.destroy()?.catch(() => {});
+      (ws.destroy() as unknown as Promise<void>).catch(() => {});
       if (containerRef.current) {
         containerRef.current.removeEventListener("wheel", handleWheel);
       }

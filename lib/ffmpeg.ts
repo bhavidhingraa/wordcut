@@ -66,13 +66,13 @@ export async function exportTrimmedAudio(
 }
 
 export function generateSRT(
-  words: { word: string; start: number; end: number; isDeleted: boolean }[]
+  words: { word: string; start: number; end: number; isCut: boolean }[]
 ): string {
   let srt = "";
   let index = 1;
 
   words.forEach((w) => {
-    if (w.isDeleted) return;
+    if (w.isCut) return;
     const start = formatSRTTime(w.start);
     const end = formatSRTTime(w.end);
     srt += `${index}\n${start} --> ${end}\n${w.word}\n\n`;
