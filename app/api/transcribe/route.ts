@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@deepgram/sdk";
 
 export async function POST(request: NextRequest) {
   const apiKey = process.env.DEEPGRAM_API_KEY;
@@ -22,21 +21,37 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "No audio file provided" }, { status: 400 });
   }
 
-  const deepgram = createClient(apiKey);
-
   try {
     const buffer = Buffer.from(await audio.arrayBuffer());
-    const result = await deepgram.transcription.preRecorded(
-      { buffer, mimetype: audio.type },
-      { punctuate: true, integrate: true }
-    );
 
+    const response = await fetch("https://api.deepgram.com/v1/listen?punctuate=true&smart_format=true&model=nova-3", {
+      method: "POST",
+      headers: {
+        Authorization: `Token ${apiKey}`,
+        "Content-Type": audio.type,
+      },
+      body: buffer,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Deepgram API error:", response.status, errorText);
+      return NextResponse.json(
+        { error: "Transcription failed" },
+        { status: 500 }
+      );
+    }
+
+    const data = await response.json();
     const words =
-      result.result?.channels?.[0]?.alternatives?.[0]?.words || [];
+      data?.results?.channels?.[0]?.alternatives?.[0]?.words || [];
 
     return NextResponse.json({ words });
   } catch (e) {
     console.error("Deepgram error:", e);
-    return NextResponse.json({ error: "Transcription failed" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Transcription failed" },
+      { status: 500 }
+    );
   }
 }
