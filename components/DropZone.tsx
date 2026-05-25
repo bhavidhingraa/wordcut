@@ -7,62 +7,14 @@ const ACCEPTED_TYPES = ["audio/mp3", "audio/mpeg"];
 
 interface TranscribeConfirm {
   file: File;
-  dataUrl: string;
   resolve: (value: boolean) => void;
 }
 
-function fileToDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
-
 export default function DropZone() {
-  const { setAudioFile, setAudioDataUrl, audioFile, transcript, setIsRestoring } = useAudioStore();
+  const { setAudioFile, audioFile, transcript, setIsRestoring } = useAudioStore();
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isTranscribing, setIsTranscribing] = useState(false);
   const [pendingConfirm, setPendingConfirm] = useState<TranscribeConfirm | null>(null);
-
-  const doTranscribe = useCallback(async (file: File, dataUrl: string) => {
-    setError(null);
-    setAudioFile(file);
-    setAudioDataUrl(dataUrl);
-
-    setIsTranscribing(true);
-    try {
-      const formData = new FormData();
-      formData.append("audio", file);
-
-      const res = await fetch("/api/transcribe", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || "Transcription failed");
-      }
-
-      const data = await res.json();
-      const words = data.words.map(
-        (w: { word: string; start: number; end: number }) => ({
-          word: w.word,
-          start: w.start,
-          end: w.end,
-          isCut: false,
-        })
-      );
-      useAudioStore.getState().setTranscript(words);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Transcription failed");
-    } finally {
-      setIsTranscribing(false);
-    }
-  }, [setAudioFile, setAudioDataUrl]);
 
   const handleFile = useCallback(
     async (file: File) => {
@@ -71,26 +23,21 @@ export default function DropZone() {
         return;
       }
 
-      const dataUrl = await fileToDataUrl(file);
-
-      // If transcript already exists from a restored session, ask before re-transcribing
       if (transcript.length > 0) {
-        setPendingConfirm({ file, dataUrl, resolve: (confirmed) => {
+        setPendingConfirm({ file, resolve: (confirmed) => {
           setPendingConfirm(null);
           if (confirmed) {
-            doTranscribe(file, dataUrl);
+            setAudioFile(file);
+            setIsRestoring(true);
+            setTimeout(() => setIsRestoring(false), 100);
           }
         }});
         return;
       }
 
-      // Just store the file and dataUrl; transcription happens manually via TranscribeButton
       setAudioFile(file);
-      setAudioDataUrl(dataUrl);
-      setIsRestoring(true);
-      setTimeout(() => setIsRestoring(false), 100);
     },
-    [transcript.length, doTranscribe, setAudioFile, setAudioDataUrl, setIsRestoring]
+    [transcript.length, setAudioFile, setIsRestoring]
   );
 
   const handleDrop = useCallback(

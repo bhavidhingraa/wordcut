@@ -15,7 +15,7 @@ export interface Selection {
 
 interface AudioStore {
   audioFile: File | null;
-  audioDataUrl: string | null;
+  audioDataUrl: string | null; // runtime only, not persisted
   transcript: Word[];
   playback: {
     isPlaying: boolean;
@@ -82,7 +82,6 @@ export const useAudioStore = create<AudioStore>()(
     {
       name: "wordcut-session",
       partialize: (state) => ({
-        audioDataUrl: state.audioDataUrl,
         transcript: state.transcript,
         ui: { selection: state.ui.selection },
       }),

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useAudioStore } from "@/store/audioStore";
 
 export default function RestoreBanner() {
-  const { setIsRestoring, transcript } = useAudioStore();
+  const { setIsRestoring, transcript, audioFile } = useAudioStore();
   const [hasStored, setHasStored] = useState(false);
 
   useEffect(() => {
@@ -21,7 +21,7 @@ export default function RestoreBanner() {
     }
   }, []);
 
-  if (!hasStored || transcript.length > 0) return null;
+  if (!hasStored || transcript.length > 0 || audioFile) return null;
 
   return (
     <div
@@ -29,30 +29,15 @@ export default function RestoreBanner() {
       style={{ background: "rgba(245,158,11,0.1)", borderBottom: "1px solid var(--accent)" }}
     >
       <span className="text-sm" style={{ color: "var(--accent)" }}>
-        Previous session found — restore transcript?
+        Previous session found — click Transcribe to reload
       </span>
-      <div className="flex gap-2">
-        <button
-          onClick={() => {
-            localStorage.removeItem("wordcut-session");
-            setHasStored(false);
-          }}
-          className="text-sm px-2 py-1"
-          style={{ color: "var(--text-muted)" }}
-        >
-          New session
-        </button>
-        <button
-          onClick={() => {
-            setIsRestoring(true);
-            setHasStored(false);
-          }}
-          className="text-sm px-2 py-1 font-medium"
-          style={{ color: "var(--accent)" }}
-        >
-          Restore
-        </button>
-      </div>
+      <button
+        onClick={() => setHasStored(false)}
+        className="text-sm px-2 py-1"
+        style={{ color: "var(--text-muted)" }}
+      >
+        Dismiss
+      </button>
     </div>
   );
 }
