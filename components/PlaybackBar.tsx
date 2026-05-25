@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useAudioStore } from "@/store/audioStore";
 import ExportModal from "./ExportModal";
 
@@ -77,13 +77,29 @@ export default function PlaybackBar() {
     [setPlayback]
   );
 
-  const objectUrl = audioFile ? URL.createObjectURL(audioFile) : null;
+  const objectUrl = useMemo(() => {
+    if (!audioFile) return null;
+    return URL.createObjectURL(audioFile);
+  }, [audioFile]);
+
+  // Cleanup object URL on unmount or when audioFile changes
+  useMemo(() => {
+    return () => {
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [objectUrl]);
+
+  // Pause audio when component unmounts
+  const handlePause = useCallback(() => {
+    audioRef.current?.pause();
+  }, []);
 
   return (
     <>
       <div className="flex-shrink-0 h-20 bg-surface border-t border-gray-200 px-4 flex items-center gap-4">
         {objectUrl && (
           <audio
+            key={audioFile?.name}
             ref={audioRef}
             src={objectUrl}
             onTimeUpdate={handleTimeUpdate}
