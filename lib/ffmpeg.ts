@@ -16,7 +16,7 @@ export async function getFFmpeg(): Promise<FFmpeg> {
 
 export async function exportTrimmedAudio(
   audioFile: File,
-  words: { start: number; end: number; isDeleted: boolean }[],
+  words: { start: number; end: number; isCut: boolean }[],
   onProgress?: (p: number) => void
 ): Promise<Blob> {
   const ff = await getFFmpeg();
@@ -27,7 +27,7 @@ export async function exportTrimmedAudio(
 
   await ff.writeFile("input.mp3", await fetchFile(audioFile));
 
-  const segments = words.filter((w) => !w.isDeleted);
+  const segments = words.filter((w) => !w.isCut);
   const segmentFiles: string[] = [];
 
   for (let i = 0; i < segments.length; i++) {

@@ -5,21 +5,21 @@ import { useAudioStore } from "@/store/audioStore";
 import WordToken from "./WordToken";
 
 export default function TranscriptEditor() {
-  const { transcript, ui, setSelection, deleteWords, restoreWord, playback } =
+  const { transcript, ui, setSelection, addCut, removeCut, playback } =
     useAudioStore();
   const containerRef = useRef<HTMLDivElement>(null);
   const isMouseDown = useRef(false);
   const selectionStart = useRef<number | null>(null);
 
   const currentWordIndex = transcript.findIndex(
-    (w) => w.start <= playback.currentTime && playback.currentTime < w.end && !w.isDeleted
+    (w) => w.start <= playback.currentTime && playback.currentTime < w.end && !w.isCut
   );
 
   // Auto-scroll to current playback position
   useEffect(() => {
     if (currentWordIndex === -1 || !containerRef.current) return;
     const tokens =
-      containerRef.current.querySelectorAll(".word-token:not(.deleted)");
+      containerRef.current.querySelectorAll(".word-token:not(.cut)");
     const token = tokens[currentWordIndex];
     if (token) {
       token.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -36,7 +36,7 @@ export default function TranscriptEditor() {
         e.preventDefault();
         const { selection } = ui;
         if (selection) {
-          deleteWords(selection.start, selection.end);
+          addCut(selection.start, selection.end);
         }
       }
       if (e.key === "a" && (e.metaKey || e.ctrlKey)) {
@@ -48,7 +48,7 @@ export default function TranscriptEditor() {
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [ui.selection, transcript.length, deleteWords, setSelection]);
+  }, [ui.selection, transcript.length, addCut, setSelection]);
 
   const handleWordMouseDown = useCallback(
     (index: number, e: React.MouseEvent) => {
@@ -85,9 +85,9 @@ export default function TranscriptEditor() {
   const handleRestore = useCallback(
     (index: number, e: React.MouseEvent) => {
       e.stopPropagation();
-      restoreWord(index);
+      removeCut(index);
     },
-    [restoreWord]
+    [removeCut]
   );
 
   const isSelected = (index: number) =>
@@ -95,8 +95,8 @@ export default function TranscriptEditor() {
 
   if (transcript.length === 0) {
     return (
-      <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">
-        Load an audio file to see the transcript
+      <div className="flex-1 flex items-center justify-center text-sm" style={{ color: "var(--text-muted)" }}>
+        Upload an MP3 to see transcript
       </div>
     );
   }
@@ -104,7 +104,7 @@ export default function TranscriptEditor() {
   return (
     <div
       ref={containerRef}
-      className="flex-1 overflow-y-auto p-4 leading-relaxed text-gray-900 select-none"
+      className="flex-1 overflow-y-auto p-4 select-none"
       onMouseUp={handleWordMouseUp}
       onMouseLeave={handleWordMouseUp}
     >
@@ -114,7 +114,7 @@ export default function TranscriptEditor() {
           word={word.word}
           start={word.start}
           end={word.end}
-          isDeleted={word.isDeleted}
+          isCut={word.isCut}
           isSelected={isSelected(index)}
           isCurrent={currentWordIndex === index}
           onClick={(e) => handleWordMouseDown(index, e)}

@@ -3,14 +3,7 @@
 import { useCallback, useState } from "react";
 import { useAudioStore } from "@/store/audioStore";
 
-const ACCEPTED_TYPES = [
-  "audio/wav",
-  "audio/mp3",
-  "audio/mpeg",
-  "audio/m4a",
-  "audio/ogg",
-  "audio/webm",
-];
+const ACCEPTED_TYPES = ["audio/mp3", "audio/mpeg"];
 
 interface TranscribeConfirm {
   file: File;
@@ -49,7 +42,7 @@ export default function DropZone() {
           word: w.word,
           start: w.start,
           end: w.end,
-          isDeleted: false,
+          isCut: false,
         })
       );
       useAudioStore.getState().setTranscript(words);
@@ -63,9 +56,7 @@ export default function DropZone() {
   const handleFile = useCallback(
     async (file: File) => {
       if (!ACCEPTED_TYPES.includes(file.type)) {
-        setError(
-          `Unsupported format: ${file.type}. Use WAV, MP3, M4A, OGG, or WebM.`
-        );
+        setError(`Unsupported format: ${file.type}. Use MP3 only.`);
         return;
       }
 
@@ -106,40 +97,43 @@ export default function DropZone() {
   return (
     <>
       {pendingConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-surface rounded-lg shadow-xl w-80 p-5">
-            <h2 className="text-lg font-semibold text-gray-900 mb-2">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ background: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)" }}
+        >
+          <div
+            className="rounded-lg p-6 w-80"
+            style={{ background: "var(--bg-elevated)", border: "1px solid var(--border)" }}
+          >
+            <h2 className="text-base font-semibold mb-2" style={{ color: "var(--text-primary)" }}>
               Existing transcript found
             </h2>
-            <p className="text-sm text-gray-600 mb-4">
-              A transcript for this session already exists. Do you want to transcribe again or keep the existing one?
+            <p className="text-sm mb-5" style={{ color: "var(--text-secondary)" }}>
+              Replace with a new file or keep current session?
             </p>
             <div className="flex gap-2 justify-end">
               <button
                 onClick={() => pendingConfirm.resolve(false)}
-                className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800 transition-colors"
+                className="btn-ghost text-sm"
               >
-                Keep existing
+                Keep
               </button>
               <button
                 onClick={() => pendingConfirm.resolve(true)}
-                className="px-3 py-1.5 text-sm bg-primary text-white rounded hover:bg-blue-700 transition-colors"
+                className="btn-primary text-sm"
               >
-                Transcribe again
+                Replace
               </button>
             </div>
           </div>
         </div>
       )}
 
-      <div className="w-full bg-surface border-b border-gray-200">
+      <div style={{ background: "var(--bg-surface)", borderBottom: "1px solid var(--border)" }}>
         {!useAudioStore.getState().audioFile ? (
           <label
-            className={`flex flex-col items-center justify-center h-28 px-4 cursor-pointer transition-colors ${
-              isDragging
-                ? "bg-blue-50 border-2 border-dashed border-primary"
-                : "hover:bg-gray-50"
-            }`}
+            className="flex flex-col items-center justify-center cursor-pointer transition-all duration-150"
+            style={{ height: "88px" }}
             onDragOver={(e) => {
               e.preventDefault();
               setIsDragging(true);
@@ -153,31 +147,47 @@ export default function DropZone() {
               onChange={handleInputChange}
               className="sr-only"
             />
-            <span className="text-gray-500 text-sm">
-              {isDragging
-                ? "Drop audio file here"
-                : "Drop audio file or click to select"}
-            </span>
-            <span className="text-gray-400 text-xs mt-1">
-              WAV, MP3, M4A, OGG, WebM
-            </span>
+            <div
+              style={{
+                padding: "20px 32px",
+                border: `2px dashed ${isDragging ? "var(--accent)" : "var(--border)"}`,
+                borderRadius: "8px",
+                width: "100%",
+                maxWidth: "480px",
+                transition: "border-color 0.15s",
+                background: isDragging ? "var(--accent-glow)" : "transparent",
+              }}
+            >
+              <span
+                className="text-sm font-medium"
+                style={{ color: isDragging ? "var(--accent)" : "var(--text-secondary)" }}
+              >
+                {isDragging ? "Drop MP3 here" : "Drop MP3 or click to select"}
+              </span>
+              <span className="text-xs mt-1 block" style={{ color: "var(--text-muted)" }}>
+                MP3 only
+              </span>
+            </div>
           </label>
         ) : (
-          <div className="flex items-center justify-between h-16 px-4">
+          <div className="flex items-center justify-between px-4" style={{ height: "52px" }}>
             <div className="flex flex-col min-w-0">
-              <span className="text-sm font-medium text-gray-900 truncate">
+              <span className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>
                 {useAudioStore.getState().audioFile?.name}
               </span>
-              <span className="text-xs text-gray-500">
+              <span className="text-xs" style={{ color: "var(--text-muted)" }}>
                 {(useAudioStore.getState().audioFile!.size / 1024 / 1024).toFixed(1)} MB
                 {isTranscribing && (
-                  <span className="ml-2 text-primary">
-                    — Transcribing...
+                  <span className="ml-2" style={{ color: "var(--accent)" }}>
+                    — Transcribing…
                   </span>
                 )}
               </span>
             </div>
-            <label className="text-sm text-primary hover:text-blue-700 cursor-pointer">
+            <label
+              className="text-sm cursor-pointer transition-colors"
+              style={{ color: "var(--accent)" }}
+            >
               <input
                 type="file"
                 accept={ACCEPTED_TYPES.join(",")}
@@ -190,7 +200,10 @@ export default function DropZone() {
         )}
 
         {error && (
-          <div className="px-4 py-2 bg-red-50 text-sm text-red-600">
+          <div
+            className="px-4 py-2 text-sm"
+            style={{ background: "rgba(239,68,68,0.1)", color: "#ef4444" }}
+          >
             {error}
           </div>
         )}

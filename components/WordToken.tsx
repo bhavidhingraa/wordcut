@@ -6,7 +6,7 @@ interface WordTokenProps {
   word: string;
   start: number;
   end: number;
-  isDeleted: boolean;
+  isCut: boolean;
   isSelected: boolean;
   isCurrent: boolean;
   onClick: (e: React.MouseEvent) => void;
@@ -18,22 +18,22 @@ const WordToken = memo(function WordToken({
   word,
   start,
   end,
-  isDeleted,
+  isCut,
   isSelected,
   isCurrent,
   onClick,
   onRestoreClick,
   onMouseEnter,
 }: WordTokenProps) {
-  let className = "word-token transition-colors duration-150 ";
-  if (isDeleted) className += "deleted ";
+  let className = "word-token ";
+  if (isCut) className += "cut ";
   else if (isSelected) className += "selected ";
   else if (isCurrent) className += "current ";
 
   return (
     <span
       className={className}
-      onClick={isDeleted ? onRestoreClick : onClick}
+      onClick={isCut ? onRestoreClick : onClick}
       onMouseEnter={onMouseEnter}
       title={`${start.toFixed(2)}s → ${end.toFixed(2)}s`}
     >

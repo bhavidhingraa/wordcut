@@ -43,15 +43,15 @@ export default function PlaybackBar() {
     if (!audio) return;
     setPlayback({ currentTime: audio.currentTime });
 
-    const deletedWord = transcript.find(
+    const cutWord = transcript.find(
       (w) =>
-        w.isDeleted &&
+        w.isCut &&
         audio.currentTime >= w.start &&
         audio.currentTime < w.end
     );
-    if (deletedWord) {
+    if (cutWord) {
       const nextUndelted = transcript.find(
-        (w) => !w.isDeleted && w.start > deletedWord.start
+        (w) => !w.isCut && w.start > cutWord.start
       );
       if (nextUndelted) {
         audio.currentTime = nextUndelted.start;
@@ -111,7 +111,7 @@ export default function PlaybackBar() {
 
   return (
     <>
-      <div className="flex-shrink-0 h-20 bg-surface border-t border-gray-200 px-4 flex items-center gap-4">
+      <div className="flex-shrink-0 h-20 px-4 flex items-center gap-4" style={{ background: "var(--bg-surface)", borderTop: "1px solid var(--border)" }}>
         {objectUrl && (
           <audio
             key={audioFile?.name}
@@ -128,7 +128,8 @@ export default function PlaybackBar() {
         <button
           onClick={handlePlayPause}
           disabled={!audioFile}
-          className="flex-shrink-0 w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center disabled:opacity-30 hover:bg-blue-700 transition-colors"
+          className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center disabled:opacity-30 transition-all"
+          style={{ background: "var(--accent)", color: "#000" }}
         >
           {playback.isPlaying ? (
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
@@ -146,7 +147,7 @@ export default function PlaybackBar() {
           )}
         </button>
 
-        <span className="font-mono text-xs text-gray-500 w-20">
+        <span className="font-mono text-xs w-20" style={{ color: "var(--text-muted)" }}>
           {formatTime(playback.currentTime)}
         </span>
 
@@ -158,10 +159,11 @@ export default function PlaybackBar() {
           value={playback.currentTime}
           onChange={handleSeek}
           disabled={!audioFile}
-          className="flex-1 h-1 accent-primary disabled:opacity-30"
+          className="flex-1 h-1 disabled:opacity-30"
+          style={{ accentColor: "var(--accent)" }}
         />
 
-        <span className="font-mono text-xs text-gray-400 w-20 text-right">
+        <span className="font-mono text-xs w-20 text-right" style={{ color: "var(--text-muted)" }}>
           {playback.duration ? formatTime(playback.duration) : "00:00.00"}
         </span>
 
@@ -169,7 +171,8 @@ export default function PlaybackBar() {
           value={playback.speed}
           onChange={(e) => handleSpeedChange(parseFloat(e.target.value))}
           disabled={!audioFile}
-          className="text-xs border border-gray-200 rounded px-2 py-1 text-gray-600 disabled:opacity-30"
+          className="text-xs rounded px-2 py-1 disabled:opacity-30"
+          style={{ background: "var(--bg-elevated)", border: "1px solid var(--border)", color: "var(--text-secondary)" }}
         >
           {SPEEDS.map((s) => (
             <option key={s} value={s}>
@@ -181,7 +184,8 @@ export default function PlaybackBar() {
         <button
           onClick={() => setShowExport(true)}
           disabled={!audioFile || transcript.length === 0}
-          className="text-sm px-3 py-1.5 rounded border border-primary text-primary hover:bg-blue-50 disabled:opacity-30 transition-colors"
+          className="text-sm px-3 py-1.5 rounded border transition-colors disabled:opacity-30"
+          style={{ borderColor: "var(--accent)", color: "var(--accent)" }}
         >
           Export
         </button>

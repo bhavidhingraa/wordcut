@@ -8,7 +8,7 @@ export default function RestoreBanner() {
   const [hasStored, setHasStored] = useState(false);
 
   useEffect(() => {
-    const stored = localStorage.getItem("worddrop-session");
+    const stored = localStorage.getItem("wordcut-session");
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
@@ -24,17 +24,21 @@ export default function RestoreBanner() {
   if (!hasStored || transcript.length > 0) return null;
 
   return (
-    <div className="flex-shrink-0 bg-blue-50 border-b border-blue-100 px-4 py-2 flex items-center justify-between">
-      <span className="text-sm text-blue-700">
-        A previous session was found. Restore your transcript?
+    <div
+      className="flex-shrink-0 px-4 py-2 flex items-center justify-between"
+      style={{ background: "rgba(245,158,11,0.1)", borderBottom: "1px solid var(--accent)" }}
+    >
+      <span className="text-sm" style={{ color: "var(--accent)" }}>
+        Previous session found — restore transcript?
       </span>
       <div className="flex gap-2">
         <button
           onClick={() => {
-            localStorage.removeItem("worddrop-session");
+            localStorage.removeItem("wordcut-session");
             setHasStored(false);
           }}
-          className="text-sm text-gray-500 hover:text-gray-700 px-2 py-1"
+          className="text-sm px-2 py-1"
+          style={{ color: "var(--text-muted)" }}
         >
           New session
         </button>
@@ -43,7 +47,8 @@ export default function RestoreBanner() {
             setIsRestoring(true);
             setHasStored(false);
           }}
-          className="text-sm text-primary hover:text-blue-700 font-medium px-2 py-1"
+          className="text-sm px-2 py-1 font-medium"
+          style={{ color: "var(--accent)" }}
         >
           Restore
         </button>

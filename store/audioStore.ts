@@ -5,7 +5,7 @@ export interface Word {
   word: string;
   start: number;
   end: number;
-  isDeleted: boolean;
+  isCut: boolean;
 }
 
 export interface Selection {
@@ -32,8 +32,8 @@ interface AudioStore {
   clearTranscript: () => void;
   setPlayback: (playback: Partial<AudioStore["playback"]>) => void;
   setSelection: (selection: Selection | null) => void;
-  deleteWords: (startIdx: number, endIdx: number) => void;
-  restoreWord: (index: number) => void;
+  addCut: (startIdx: number, endIdx: number) => void;
+  removeCut: (index: number) => void;
   setIsRestoring: (val: boolean) => void;
 }
 
@@ -60,23 +60,23 @@ export const useAudioStore = create<AudioStore>()(
         set((state) => ({ playback: { ...state.playback, ...update } })),
       setSelection: (selection) =>
         set((state) => ({ ui: { ...state.ui, selection } })),
-      deleteWords: (startIdx, endIdx) =>
+      addCut: (startIdx, endIdx) =>
         set((state) => ({
           transcript: state.transcript.map((w, i) =>
-            i >= startIdx && i <= endIdx ? { ...w, isDeleted: true } : w
+            i >= startIdx && i <= endIdx ? { ...w, isCut: true } : w
           ),
           ui: { selection: null },
         })),
-      restoreWord: (index) =>
+      removeCut: (index) =>
         set((state) => ({
           transcript: state.transcript.map((w, i) =>
-            i === index ? { ...w, isDeleted: false } : w
+            i === index ? { ...w, isCut: false } : w
           ),
         })),
       setIsRestoring: (val) => set({ isRestoring: val }),
     }),
     {
-      name: "worddrop-session",
+      name: "wordcut-session",
       partialize: (state) => ({
         transcript: state.transcript,
         ui: { selection: state.ui.selection },
