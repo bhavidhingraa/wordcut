@@ -5,7 +5,7 @@ import { useAudioStore } from "@/store/audioStore";
 import { Mic } from "lucide-react";
 
 export default function TranscribeButton() {
-  const { audioFile, transcript, setPlayback } = useAudioStore();
+  const { audioFile, transcript } = useAudioStore();
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -45,8 +45,7 @@ export default function TranscribeButton() {
     }
   }, [audioFile]);
 
-  const canTranscribe = audioFile && transcript.length === 0 && !isTranscribing;
-  const alreadyHasTranscript = transcript.length > 0;
+  const canTranscribe = audioFile && !isTranscribing;
 
   return (
     <div className="flex items-center gap-2 px-4 py-3" style={{ background: "var(--bg-surface)", borderBottom: "1px solid var(--border)" }}>
@@ -61,9 +60,9 @@ export default function TranscribeButton() {
       {error && (
         <span className="text-sm" style={{ color: "#ef4444" }}>{error}</span>
       )}
-      {alreadyHasTranscript && (
+      {transcript.length > 0 && (
         <span className="text-xs" style={{ color: "var(--text-muted)" }}>
-          {transcript.length} words loaded
+          {transcript.length} words
         </span>
       )}
     </div>
