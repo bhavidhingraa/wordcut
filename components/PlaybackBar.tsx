@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAudioStore } from "@/store/audioStore";
 import ExportModal from "./ExportModal";
 
@@ -10,13 +10,16 @@ function formatTime(seconds: number): string {
   const mins = Math.floor(seconds / 60);
   const secs = Math.floor(seconds % 60);
   const ms = Math.floor((seconds % 1) * 100);
-  return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}.${ms.toString().padStart(2, "0")}`;
+  return `${mins.toString().padStart(2, "0")}:${secs
+    .toString()
+    .padStart(2, "0")}.${ms.toString().padStart(2, "0")}`;
 }
 
 export default function PlaybackBar() {
   const { audioFile, transcript, playback, setPlayback } = useAudioStore();
   const audioRef = useRef<HTMLAudioElement>(null);
   const [showExport, setShowExport] = useState(false);
+  const prevAudioFileRef = useRef<File | null>(null);
 
   const handlePlayPause = useCallback(() => {
     const audio = audioRef.current;
@@ -25,7 +28,12 @@ export default function PlaybackBar() {
       audio.pause();
       setPlayback({ isPlaying: false });
     } else {
-      audio.play();
+      const playPromise = audio.play();
+      if (playPromise) {
+        playPromise.catch(() => {
+          // Ignore AbortError - happens when new loadrequest interrupts play
+        });
+      }
       setPlayback({ isPlaying: true });
     }
   }, [playback.isPlaying, setPlayback]);
@@ -36,7 +44,10 @@ export default function PlaybackBar() {
     setPlayback({ currentTime: audio.currentTime });
 
     const deletedWord = transcript.find(
-      (w) => w.isDeleted && audio.currentTime >= w.start && audio.currentTime < w.end
+      (w) =>
+        w.isDeleted &&
+        audio.currentTime >= w.start &&
+        audio.currentTime < w.end
     );
     if (deletedWord) {
       const nextUndelted = transcript.find(
@@ -77,22 +88,26 @@ export default function PlaybackBar() {
     [setPlayback]
   );
 
+  // When audioFile changes, pause and reset state before the new audio loads
+  useEffect(() => {
+    if (audioFile !== prevAudioFileRef.current && audioRef.current) {
+      audioRef.current.pause();
+      setPlayback({ isPlaying: false, currentTime: 0 });
+    }
+    prevAudioFileRef.current = audioFile;
+  }, [audioFile, setPlayback]);
+
   const objectUrl = useMemo(() => {
     if (!audioFile) return null;
     return URL.createObjectURL(audioFile);
   }, [audioFile]);
 
-  // Cleanup object URL on unmount or when audioFile changes
-  useMemo(() => {
-    return () => {
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
-    };
-  }, [objectUrl]);
-
-  // Pause audio when component unmounts
-  const handlePause = useCallback(() => {
-    audioRef.current?.pause();
-  }, []);
+  // Cancel any pending play when audioFile changes
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
+  }, [audioFile]);
 
   return (
     <>
@@ -102,9 +117,11 @@ export default function PlaybackBar() {
             key={audioFile?.name}
             ref={audioRef}
             src={objectUrl}
+            preload="metadata"
             onTimeUpdate={handleTimeUpdate}
             onLoadedMetadata={handleLoadedMetadata}
             onEnded={() => setPlayback({ isPlaying: false })}
+            onPause={() => setPlayback({ isPlaying: false })}
           />
         )}
 
@@ -119,7 +136,11 @@ export default function PlaybackBar() {
               <rect x="14" y="4" width="4" height="16" />
             </svg>
           ) : (
-            <svg className="w-4 h-4 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+            <svg
+              className="w-4 h-4 ml-0.5"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+            >
               <polygon points="5,3 19,12 5,21" />
             </svg>
           )}
@@ -151,7 +172,9 @@ export default function PlaybackBar() {
           className="text-xs border border-gray-200 rounded px-2 py-1 text-gray-600 disabled:opacity-30"
         >
           {SPEEDS.map((s) => (
-            <option key={s} value={s}>{s}x</option>
+            <option key={s} value={s}>
+              {s}x
+            </option>
           ))}
         </select>
 
