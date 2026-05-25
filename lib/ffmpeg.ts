@@ -6,7 +6,10 @@ let ffmpeg: FFmpeg | null = null;
 export async function getFFmpeg(): Promise<FFmpeg> {
   if (!ffmpeg) {
     ffmpeg = new FFmpeg();
-    await ffmpeg.load();
+    await ffmpeg.load({
+      coreURL: "https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm/ffmpeg-core.js",
+      wasmURL: "https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm/ffmpeg-core.wasm",
+    });
   }
   return ffmpeg;
 }
@@ -34,7 +37,7 @@ export async function exportTrimmedAudio(
       "-ss", seg.start.toString(),
       "-to", seg.end.toString(),
       "-c", "copy",
-      `segment_${i}.mp3`
+      `segment_${i}.mp3`,
     ]);
     segmentFiles.push(`segment_${i}.mp3`);
   }
@@ -47,7 +50,7 @@ export async function exportTrimmedAudio(
     "-safe", "0",
     "-i", "concat.txt",
     "-c", "copy",
-    "output.mp3"
+    "output.mp3",
   ]);
 
   const data = await ff.readFile("output.mp3");
