@@ -6,10 +6,13 @@ import PlaybackBar from "@/components/PlaybackBar";
 import RestoreBanner from "@/components/RestoreBanner";
 import WaveformEditor from "@/components/WaveformEditor";
 import CutTextInput from "@/components/CutTextInput";
+import TranscribeButton from "@/components/TranscribeButton";
 import { useAudioStore } from "@/store/audioStore";
 
 export default function Home() {
-  const hasAudio = useAudioStore((s) => s.audioFile !== null);
+  const hasAudio = useAudioStore((s) => s.audioFile !== null || s.audioDataUrl !== null);
+  const hasTranscript = useAudioStore((s) => s.transcript.length > 0);
+  const isRestoring = useAudioStore((s) => s.isRestoring);
 
   return (
     <div className="flex flex-col h-screen" style={{ background: "var(--bg-base)" }}>
@@ -22,6 +25,7 @@ export default function Home() {
           <div className="flex-shrink-0">
             <WaveformEditor />
           </div>
+          <TranscribeButton />
           <div className="flex-shrink-0">
             <CutTextInput />
           </div>
@@ -33,7 +37,7 @@ export default function Home() {
           </div>
         </>
       )}
-      {!hasAudio && (
+      {!hasAudio && !isRestoring && (
         <div
           className="flex-1 flex flex-col items-center justify-center"
           style={{ background: "var(--bg-base)" }}

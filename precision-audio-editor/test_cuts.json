@@ -1,0 +1,14 @@
+[
+  {
+    "start": "0:40",
+    "end": "0:52",
+    "before": "By the end, You'll get how to solve it, but maybe more importantly, why you'd choose one way over another, right?",
+    "after": "OK, so let's paint the picture."
+  },
+  {
+    "start": "1:30",
+    "end": "1:34",
+    "before": "But if numbs is 1234, all different, that's false, right?",
+    "after": "And just for context, we're usually talking arrays maybe up to like 100,000 elements."
+  }
+]

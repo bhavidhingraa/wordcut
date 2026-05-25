@@ -7,19 +7,30 @@ const ACCEPTED_TYPES = ["audio/mp3", "audio/mpeg"];
 
 interface TranscribeConfirm {
   file: File;
+  dataUrl: string;
   resolve: (value: boolean) => void;
 }
 
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 export default function DropZone() {
-  const { setAudioFile, transcript } = useAudioStore();
+  const { setAudioFile, setAudioDataUrl, audioFile, transcript, setIsRestoring } = useAudioStore();
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [pendingConfirm, setPendingConfirm] = useState<TranscribeConfirm | null>(null);
 
-  const doTranscribe = useCallback(async (file: File) => {
+  const doTranscribe = useCallback(async (file: File, dataUrl: string) => {
     setError(null);
     setAudioFile(file);
+    setAudioDataUrl(dataUrl);
 
     setIsTranscribing(true);
     try {
@@ -51,7 +62,7 @@ export default function DropZone() {
     } finally {
       setIsTranscribing(false);
     }
-  }, [setAudioFile]);
+  }, [setAudioFile, setAudioDataUrl]);
 
   const handleFile = useCallback(
     async (file: File) => {
@@ -60,20 +71,26 @@ export default function DropZone() {
         return;
       }
 
+      const dataUrl = await fileToDataUrl(file);
+
       // If transcript already exists from a restored session, ask before re-transcribing
       if (transcript.length > 0) {
-        setPendingConfirm({ file, resolve: (confirmed) => {
+        setPendingConfirm({ file, dataUrl, resolve: (confirmed) => {
           setPendingConfirm(null);
           if (confirmed) {
-            doTranscribe(file);
+            doTranscribe(file, dataUrl);
           }
         }});
         return;
       }
 
-      await doTranscribe(file);
+      // Just store the file and dataUrl; transcription happens manually via TranscribeButton
+      setAudioFile(file);
+      setAudioDataUrl(dataUrl);
+      setIsRestoring(true);
+      setTimeout(() => setIsRestoring(false), 100);
     },
-    [transcript.length, doTranscribe]
+    [transcript.length, doTranscribe, setAudioFile, setAudioDataUrl, setIsRestoring]
   );
 
   const handleDrop = useCallback(
@@ -177,11 +194,6 @@ export default function DropZone() {
               </span>
               <span className="text-xs" style={{ color: "var(--text-muted)" }}>
                 {(useAudioStore.getState().audioFile!.size / 1024 / 1024).toFixed(1)} MB
-                {isTranscribing && (
-                  <span className="ml-2" style={{ color: "var(--accent)" }}>
-                    — Transcribing…
-                  </span>
-                )}
               </span>
             </div>
             <label

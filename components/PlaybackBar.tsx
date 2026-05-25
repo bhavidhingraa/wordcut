@@ -16,7 +16,7 @@ function formatTime(seconds: number): string {
 }
 
 export default function PlaybackBar() {
-  const { audioFile, transcript, playback, setPlayback } = useAudioStore();
+  const { audioFile, audioDataUrl, transcript, playback, setPlayback } = useAudioStore();
   const audioRef = useRef<HTMLAudioElement>(null);
   const [showExport, setShowExport] = useState(false);
   const prevAudioFileRef = useRef<File | null>(null);
@@ -98,9 +98,10 @@ export default function PlaybackBar() {
   }, [audioFile, setPlayback]);
 
   const objectUrl = useMemo(() => {
-    if (!audioFile) return null;
-    return URL.createObjectURL(audioFile);
-  }, [audioFile]);
+    if (audioFile) return URL.createObjectURL(audioFile);
+    if (audioDataUrl) return audioDataUrl;
+    return null;
+  }, [audioFile, audioDataUrl]);
 
   // Cancel any pending play when audioFile changes
   useEffect(() => {

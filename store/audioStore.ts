@@ -15,6 +15,7 @@ export interface Selection {
 
 interface AudioStore {
   audioFile: File | null;
+  audioDataUrl: string | null;
   transcript: Word[];
   playback: {
     isPlaying: boolean;
@@ -28,6 +29,7 @@ interface AudioStore {
   isRestoring: boolean;
 
   setAudioFile: (file: File | null) => void;
+  setAudioDataUrl: (url: string | null) => void;
   setTranscript: (words: Word[]) => void;
   clearTranscript: () => void;
   setPlayback: (playback: Partial<AudioStore["playback"]>) => void;
@@ -41,6 +43,7 @@ export const useAudioStore = create<AudioStore>()(
   persist(
     (set) => ({
       audioFile: null,
+      audioDataUrl: null,
       transcript: [],
       playback: {
         isPlaying: false,
@@ -54,6 +57,7 @@ export const useAudioStore = create<AudioStore>()(
       isRestoring: false,
 
       setAudioFile: (file) => set({ audioFile: file }),
+      setAudioDataUrl: (url) => set({ audioDataUrl: url }),
       setTranscript: (words) => set({ transcript: words }),
       clearTranscript: () => set({ transcript: [], ui: { selection: null } }),
       setPlayback: (update) =>
@@ -78,6 +82,7 @@ export const useAudioStore = create<AudioStore>()(
     {
       name: "wordcut-session",
       partialize: (state) => ({
+        audioDataUrl: state.audioDataUrl,
         transcript: state.transcript,
         ui: { selection: state.ui.selection },
       }),

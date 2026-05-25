@@ -1,0 +1,78 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - button [disabled] [ref=e6]:
+            - img [ref=e7]
+          - button [disabled] [ref=e9]:
+            - img [ref=e10]
+          - generic [ref=e12]:
+            - text: audio_clip.wav
+            - generic [ref=e13]: "Current: 00:00.000"
+        - generic [ref=e14]:
+          - button "Choose File" [ref=e15]
+          - button "Upload" [ref=e16]:
+            - img [ref=e17]
+            - text: Upload
+          - generic [ref=e20]:
+            - text: Zoom
+            - generic [ref=e21]: 50 px/s
+      - generic:
+        - generic "Pinch trackpad or hold Ctrl and scroll to zoom"
+    - generic [ref=e23]:
+      - generic [ref=e24]:
+        - generic [ref=e25]: Transcript
+        - button "Analyze" [disabled] [ref=e26]:
+          - img [ref=e27]
+          - text: Analyze
+      - textbox "Paste your transcript here..." [ref=e30]
+    - generic [ref=e32]:
+      - generic [ref=e33]:
+        - generic [ref=e34]: Active Cuts
+        - generic [ref=e35]:
+          - button "Export" [disabled] [ref=e36]:
+            - img [ref=e37]
+            - text: Export
+          - text: Loading...
+          - button "Add Cut" [disabled] [ref=e40]:
+            - img [ref=e41]
+            - text: Add Cut
+      - table [ref=e43]:
+        - rowgroup [ref=e44]:
+          - row "Label Original Text Start End Duration Action" [ref=e45]:
+            - columnheader "Label" [ref=e46]
+            - columnheader "Original Text" [ref=e47]
+            - columnheader "Start" [ref=e48]
+            - columnheader "End" [ref=e49]
+            - columnheader "Duration" [ref=e50]
+            - columnheader "Action" [ref=e51]
+        - rowgroup [ref=e52]:
+          - row "Intro Sequence Welcome back to the podcast. Today we are talking about web development and architecture design. 00:01.500 00:04.250 00:02.750" [ref=e53]:
+            - cell "Intro Sequence" [ref=e54]:
+              - generic [ref=e55]: Intro Sequence
+            - cell "Welcome back to the podcast. Today we are talking about web development and architecture design." [ref=e56]:
+              - text: Welcome back to the podcast. Today we are talking about web development and architecture design.
+              - button [ref=e57]:
+                - img [ref=e58]
+            - cell "00:01.500" [ref=e67]
+            - cell "00:04.250" [ref=e68]
+            - cell "00:02.750" [ref=e69]
+            - cell [ref=e70]:
+              - button [ref=e71]:
+                - img [ref=e72]
+          - row "Main Dialogue I think the most important thing to consider when choosing a tech stack is how well it supports your interactive needs. 00:05.000 00:08.750 00:03.750" [ref=e75]:
+            - cell "Main Dialogue" [ref=e76]:
+              - generic [ref=e77]: Main Dialogue
+            - cell "I think the most important thing to consider when choosing a tech stack is how well it supports your interactive needs." [ref=e78]:
+              - text: I think the most important thing to consider when choosing a tech stack is how well it supports your interactive needs.
+              - button [ref=e79]:
+                - img [ref=e80]
+            - cell "00:05.000" [ref=e89]
+            - cell "00:08.750" [ref=e90]
+            - cell "00:03.750" [ref=e91]
+            - cell [ref=e92]:
+              - button [ref=e93]:
+                - img [ref=e94]
+  - button "Open Next.js Dev Tools" [ref=e102] [cursor=pointer]:
+    - img [ref=e103]

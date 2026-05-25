@@ -1,0 +1,42 @@
+{
+  "/Users/neetidhingra/Github/bhavidhingraa/precision-audio-editor/vite.config.ts": {
+    "mtime": 1779574595.01566,
+    "hash": "1fbdf2a21b42288e61394bb8a8ca66a9"
+  },
+  "/Users/neetidhingra/Github/bhavidhingraa/precision-audio-editor/server.ts": {
+    "mtime": 1779575656.7343154,
+    "hash": "0df47bc51673cb0f66c415c3cbc9a55b"
+  },
+  "/Users/neetidhingra/Github/bhavidhingraa/precision-audio-editor/src/App.tsx": {
+    "mtime": 1779549522.0,
+    "hash": "743b1007c7804d6066033414633bf136"
+  },
+  "/Users/neetidhingra/Github/bhavidhingraa/precision-audio-editor/src/main.tsx": {
+    "mtime": 1779549522.0,
+    "hash": "2b36426d5ad7e08ef79746aa524f4fb7"
+  },
+  "/Users/neetidhingra/Github/bhavidhingraa/precision-audio-editor/src/audioProcessor.ts": {
+    "mtime": 1779570857.1059968,
+    "hash": "16d95b5a2f93bf378705bfaf372989b8"
+  },
+  "/Users/neetidhingra/Github/bhavidhingraa/precision-audio-editor/src/utils.ts": {
+    "mtime": 1779549522.0,
+    "hash": "453564704f8cc68e43460152293b2f2d"
+  },
+  "/Users/neetidhingra/Github/bhavidhingraa/precision-audio-editor/src/types.ts": {
+    "mtime": 1779549522.0,
+    "hash": "74e3e323e33b6e9964520394362a0d65"
+  },
+  "/Users/neetidhingra/Github/bhavidhingraa/precision-audio-editor/src/components/AudioTimelineEditor.tsx": {
+    "mtime": 1779642753.9483585,
+    "hash": "4b88ea288c88054c5089cbd35f7f2f97"
+  },
+  "/Users/neetidhingra/Github/bhavidhingraa/precision-audio-editor/index.html": {
+    "mtime": 1779549522.0,
+    "hash": "c6cdc88c3abec682e37d1f35b7b4ad0b"
+  },
+  "/Users/neetidhingra/Github/bhavidhingraa/precision-audio-editor/README.md": {
+    "mtime": 1779549522.0,
+    "hash": "b5db9b6fc48cd4240317cf06ff01ee20"
+  }
+}

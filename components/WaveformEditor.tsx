@@ -1,34 +1,40 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef } from "react";
 import WaveSurfer from "wavesurfer.js";
 import RegionsPlugin from "wavesurfer.js/dist/plugins/regions.esm.js";
+import HoverPlugin from "wavesurfer.js/dist/plugins/hover.esm.js";
 import { useAudioStore } from "@/store/audioStore";
 import { computeCutRegionsFromTranscript } from "@/lib/cutManager";
 
 export default function WaveformEditor() {
-  const { audioFile, transcript, playback, setPlayback } = useAudioStore();
+  const { audioFile, audioDataUrl, transcript, setPlayback } = useAudioStore();
   const containerRef = useRef<HTMLDivElement>(null);
   const wavesurferRef = useRef<WaveSurfer | null>(null);
   const regionsPluginRef = useRef<RegionsPlugin | null>(null);
   const objectUrlRef = useRef<string | null>(null);
 
-  // Initialize wavesurfer
   useEffect(() => {
     if (!containerRef.current) return;
 
     const ws = WaveSurfer.create({
       container: containerRef.current,
-      waveColor: "#3f3f46",
-      progressColor: "#f59e0b",
-      cursorColor: "#f59e0b",
+      waveColor: "#d1d5db",
+      progressColor: "#6366f1",
+      cursorColor: "#4f46e5",
       cursorWidth: 2,
-      height: 96,
+      height: 150,
       normalize: true,
-      minPxPerSec: 80,
-      barWidth: 2,
-      barGap: 1,
-      barRadius: 2,
+      minPxPerSec: 50,
+      plugins: [
+        HoverPlugin.create({
+          lineColor: "#ef4444",
+          lineWidth: 2,
+          labelBackground: "#555",
+          labelColor: "#fff",
+          labelSize: "11px",
+        }),
+      ],
     });
 
     const regions = ws.registerPlugin(RegionsPlugin.create());
@@ -53,17 +59,30 @@ export default function WaveformEditor() {
     };
   }, []); // eslint-disable-line
 
-  // Load audio when file changes
+  // Load audio from file or dataUrl
   useEffect(() => {
-    if (!audioFile || !wavesurferRef.current) return;
+    if (!wavesurferRef.current) return;
+
     if (objectUrlRef.current) {
       URL.revokeObjectURL(objectUrlRef.current);
+      objectUrlRef.current = null;
     }
-    const url = URL.createObjectURL(audioFile);
-    objectUrlRef.current = url;
-    wavesurferRef.current.load(url);
-    setPlayback({ currentTime: 0, isPlaying: false });
-  }, [audioFile]); // eslint-disable-line
+
+    const loadFrom = async () => {
+      if (!wavesurferRef.current) return;
+
+      if (audioFile) {
+        const url = URL.createObjectURL(audioFile);
+        objectUrlRef.current = url;
+        wavesurferRef.current.load(url);
+      } else if (audioDataUrl) {
+        wavesurferRef.current.load(audioDataUrl);
+      }
+      setPlayback({ currentTime: 0, isPlaying: false });
+    };
+
+    loadFrom();
+  }, [audioFile, audioDataUrl]); // eslint-disable-line
 
   // Sync cut regions when transcript changes
   useEffect(() => {
@@ -83,7 +102,7 @@ export default function WaveformEditor() {
         end: cut.endTime,
         color: "rgba(239, 68, 68, 0.28)",
         drag: false,
-        resize: true,
+        resize: false,
       });
     }
   }, [transcript]);
@@ -95,15 +114,4 @@ export default function WaveformEditor() {
       style={{ background: "var(--bg-surface)" }}
     />
   );
-}
-
-// Expose wavesurfer ref for external play/pause control
-export function getWavesurfer() {
-  return wavesurferRef_current;
-}
-
-// Module-level accessor for PlaybackBar
-let wavesurferRef_current: WaveSurfer | null = null;
-export function setWavesurferRef(ws: WaveSurfer | null) {
-  wavesurferRef_current = ws;
 }
