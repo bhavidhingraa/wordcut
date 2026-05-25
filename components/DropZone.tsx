@@ -13,7 +13,7 @@ const ACCEPTED_TYPES = [
 ];
 
 export default function DropZone() {
-  const { audioFile, setAudioFile, clearTranscript } = useAudioStore();
+  const { audioFile, setAudioFile, clearTranscript, transcript } = useAudioStore();
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isTranscribing, setIsTranscribing] = useState(false);
@@ -28,6 +28,12 @@ export default function DropZone() {
       }
 
       setError(null);
+
+      // If same file is selected, skip transcription when already loaded
+      if (audioFile && audioFile.name === file.name && audioFile.size === file.size && transcript.length > 0) {
+        return;
+      }
+
       clearTranscript();
       setAudioFile(file);
 
@@ -62,7 +68,7 @@ export default function DropZone() {
         setIsTranscribing(false);
       }
     },
-    [setAudioFile, clearTranscript]
+    [audioFile, setAudioFile, clearTranscript, transcript.length]
   );
 
   const handleDrop = useCallback(
