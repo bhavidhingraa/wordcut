@@ -1,6 +1,0 @@
-{
-  "name": "Precision Audio Editor",
-  "description": "High-precision audio segmentation tool using WaveSurfer.js",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}

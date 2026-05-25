@@ -48,6 +48,9 @@ export default function WaveformEditor() {
       setPlayback({ duration: ws.getDuration() });
     });
 
+    let wsReady = false;
+    ws.on("ready", () => { wsReady = true; });
+
     ws.on("timeupdate", (currentTime) => {
       setPlayback({ currentTime });
     });
@@ -65,13 +68,13 @@ export default function WaveformEditor() {
       const zoomDelta = Math.abs(e.deltaY) > 50 ? (e.deltaY < 0 ? 20 : -10) : (e.deltaY < 0 ? 5 : -5);
       const newZoom = Math.max(MIN_ZOOM, Math.min(currentZoom + zoomDelta, MAX_ZOOM));
 
-      ws.zoom(newZoom);
+      try { ws.zoom(newZoom); } catch { /* No audio loaded */ }
     };
 
     containerRef.current.addEventListener("wheel", handleWheel, { passive: false });
 
     return () => {
-      try { ws.destroy(); } catch { /* AbortError on cleanup */ }
+      ws.destroy()?.catch(() => {});
       if (containerRef.current) {
         containerRef.current.removeEventListener("wheel", handleWheel);
       }
