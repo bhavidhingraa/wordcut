@@ -6,7 +6,7 @@ import { useAudioStore } from "@/store/audioStore";
 const ACCEPTED_TYPES = ["audio/mp3", "audio/mpeg"];
 
 export default function DropZone() {
-  const { setAudioFile, audioFile, clearTranscript } = useAudioStore();
+  const { setAudioFile, audioFile } = useAudioStore();
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -16,10 +16,9 @@ export default function DropZone() {
         setError(`Unsupported format: ${file.type}. Use MP3 only.`);
         return;
       }
-      clearTranscript();
       setAudioFile(file);
     },
-    [clearTranscript, setAudioFile]
+    [setAudioFile]
   );
 
   const handleDrop = useCallback(
