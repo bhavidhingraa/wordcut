@@ -3,7 +3,6 @@
 import { useState, useCallback } from "react";
 import { useAudioStore } from "@/store/audioStore";
 import { Mic } from "lucide-react";
-import { put } from "@vercel/blob";
 
 export default function TranscribeButton() {
   const { audioFile, transcript } = useAudioStore();
@@ -16,14 +15,24 @@ export default function TranscribeButton() {
     setIsTranscribing(true);
     setError(null);
     try {
-      const blob = await put(audioFile.name, audioFile, {
-        access: "public",
+      const { uploadUrl } = await fetch("/api/upload-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ filename: audioFile.name, contentType: audioFile.type }),
+      }).then((r) => r.json());
+
+      await fetch(uploadUrl, {
+        method: "PUT",
+        headers: { "Content-Type": audioFile.type },
+        body: audioFile,
       });
+
+      const audioUrl = uploadUrl.split("?")[0];
 
       const res = await fetch("/api/transcribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: blob.url }),
+        body: JSON.stringify({ url: audioUrl }),
       });
 
       if (!res.ok) {
