@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { issueSignedToken, presignUrl } from "@vercel/blob";
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
@@ -9,39 +10,33 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Missing filename or contentType" }, { status: 400 });
   }
 
-  const token = process.env.BLOB_READ_WRITE_TOKEN;
-  if (!token) {
-    return NextResponse.json({ error: "Blob not configured" }, { status: 500 });
+  const accountId = process.env.R2_ACCOUNT_ID;
+  const accessKeyId = process.env.R2_ACCESS_KEY_ID;
+  const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY;
+  const bucketName = process.env.R2_BUCKET_NAME;
+
+  if (!accountId || !accessKeyId || !secretAccessKey || !bucketName) {
+    return NextResponse.json({ error: "R2 not configured" }, { status: 500 });
   }
 
-  const storeId = process.env.BLOB_STORE_ID;
-  if (!storeId) {
-    return NextResponse.json({ error: "Blob store not configured" }, { status: 500 });
-  }
+  const client = new S3Client({
+    region: "auto",
+    endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
+    credentials: { accessKeyId, secretAccessKey },
+  });
 
-  const pathname = filename;
-  const publicUrl = `https://${storeId}.public.blob.vercel-storage.com/${pathname}`;
   try {
-    const signedToken = await issueSignedToken({
-      pathname: filename,
-      operations: ["put"],
-      validUntil: Date.now() + 3600_000,
-      token,
+    const command = new PutObjectCommand({
+      Bucket: bucketName,
+      Key: filename,
+      ContentType: contentType,
     });
+    const uploadUrl = await getSignedUrl(client, command, { expiresIn: 3600 });
+    const publicUrl = `https://${bucketName}.${accountId}.r2.dev/${filename}`;
 
-    const { presignedUrl } = await presignUrl(
-      { clientSigningToken: signedToken.clientSigningToken, delegationToken: signedToken.delegationToken },
-      {
-        operation: "put",
-        pathname: filename,
-        access: "public",
-        allowedContentTypes: [contentType],
-      }
-    );
-
-    return NextResponse.json({ uploadUrl: presignedUrl, pathname, publicUrl });
+    return NextResponse.json({ uploadUrl, publicUrl });
   } catch (e) {
-    console.error("Presign error:", e);
+    console.error("R2 presign error:", e);
     return NextResponse.json({ error: "Failed to create upload URL" }, { status: 500 });
   }
 }
