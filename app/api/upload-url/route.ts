@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     const signedToken = await issueSignedToken({
       pathname: filename,
       operations: ["put"],
-      validUntil: Math.floor(Date.now() / 1000) + 300,
+      validUntil: Math.floor(Date.now() / 1000) + 3600,
       token,
     });
 
