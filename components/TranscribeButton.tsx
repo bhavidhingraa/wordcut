@@ -15,7 +15,7 @@ export default function TranscribeButton() {
     setIsTranscribing(true);
     setError(null);
     try {
-      const { uploadUrl } = await fetch("/api/upload-url", {
+      const { uploadUrl, publicUrl } = await fetch("/api/upload-url", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ filename: audioFile.name, contentType: audioFile.type }),
@@ -27,12 +27,10 @@ export default function TranscribeButton() {
         body: audioFile,
       });
 
-      const audioUrl = uploadUrl.split("?")[0];
-
       const res = await fetch("/api/transcribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: audioUrl }),
+        body: JSON.stringify({ url: publicUrl }),
       });
 
       if (!res.ok) {

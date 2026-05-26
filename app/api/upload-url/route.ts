@@ -14,6 +14,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Blob not configured" }, { status: 500 });
   }
 
+  const storeId = process.env.BLOB_STORE_ID;
+  if (!storeId) {
+    return NextResponse.json({ error: "Blob store not configured" }, { status: 500 });
+  }
+
+  const pathname = filename;
+  const publicUrl = `https://${storeId}.public.blob.vercel-storage.com/${pathname}`;
   try {
     const signedToken = await issueSignedToken({
       pathname: filename,
@@ -32,7 +39,7 @@ export async function POST(request: NextRequest) {
       }
     );
 
-    return NextResponse.json({ uploadUrl: presignedUrl });
+    return NextResponse.json({ uploadUrl: presignedUrl, pathname, publicUrl });
   } catch (e) {
     console.error("Presign error:", e);
     return NextResponse.json({ error: "Failed to create upload URL" }, { status: 500 });
