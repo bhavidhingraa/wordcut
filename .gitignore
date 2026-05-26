@@ -7,3 +7,7 @@ node_modules
 *.log
 npm-debug.log*
 .eslintcache
+
+precision-audio-editor
+word-drop
+.vercel

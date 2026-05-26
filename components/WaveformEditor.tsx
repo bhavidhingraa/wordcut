@@ -6,6 +6,7 @@ import RegionsPlugin from "wavesurfer.js/dist/plugins/regions.esm.js";
 import HoverPlugin from "wavesurfer.js/dist/plugins/hover.esm.js";
 import { useAudioStore } from "@/store/audioStore";
 import { computeCutRegionsFromTranscript } from "@/lib/cutManager";
+import { wavesurferController } from "@/lib/wavesurferController";
 
 export default function WaveformEditor() {
   const { audioFile, audioDataUrl, transcript, setPlayback } = useAudioStore();
@@ -43,6 +44,7 @@ export default function WaveformEditor() {
     const regions = ws.registerPlugin(RegionsPlugin.create());
     wavesurferRef.current = ws;
     regionsPluginRef.current = regions;
+    wavesurferController.set(ws);
 
     ws.on("ready", () => {
       setPlayback({ duration: ws.getDuration() });
@@ -52,6 +54,17 @@ export default function WaveformEditor() {
     ws.on("ready", () => { wsReady = true; });
 
     ws.on("timeupdate", (currentTime) => {
+      const regions = regionsPluginRef.current;
+      if (!regions) return;
+
+      const sorted = [...regions.getRegions()].sort((a, b) => a.start - b.start);
+      const cutRegion = sorted.find(
+        (r) => currentTime >= r.start && currentTime < r.end
+      );
+      if (cutRegion) {
+        ws.seekTo(cutRegion.end / ws.getDuration());
+        return;
+      }
       setPlayback({ currentTime });
     });
 
@@ -74,12 +87,13 @@ export default function WaveformEditor() {
     containerRef.current.addEventListener("wheel", handleWheel, { passive: false });
 
     return () => {
-      (ws.destroy() as unknown as Promise<void>).catch(() => {});
+      try { ws.destroy(); } catch { /* AbortError during unload */ }
       if (containerRef.current) {
         containerRef.current.removeEventListener("wheel", handleWheel);
       }
       wavesurferRef.current = null;
       regionsPluginRef.current = null;
+      wavesurferController.set(null);
     };
   }, []); // eslint-disable-line
 
@@ -125,8 +139,8 @@ export default function WaveformEditor() {
         start: cut.startTime,
         end: cut.endTime,
         color: "rgba(239, 68, 68, 0.28)",
-        drag: false,
-        resize: false,
+        drag: true,
+        resize: true,
       });
     }
   }, [transcript]);

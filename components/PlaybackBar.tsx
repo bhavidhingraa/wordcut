@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import { useAudioStore } from "@/store/audioStore";
+import { wavesurferController } from "@/lib/wavesurferController";
 import ExportModal from "./ExportModal";
 
 const SPEEDS = [0.75, 1, 1.25, 1.5, 2];
@@ -16,116 +17,42 @@ function formatTime(seconds: number): string {
 }
 
 export default function PlaybackBar() {
-  const { audioFile, audioDataUrl, transcript, playback, setPlayback } = useAudioStore();
-  const audioRef = useRef<HTMLAudioElement>(null);
+  const { audioFile, transcript, playback, setPlayback } = useAudioStore();
   const [showExport, setShowExport] = useState(false);
-  const prevAudioFileRef = useRef<File | null>(null);
 
   const handlePlayPause = useCallback(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    if (playback.isPlaying) {
-      audio.pause();
-      setPlayback({ isPlaying: false });
-    } else {
-      const playPromise = audio.play();
-      if (playPromise) {
-        playPromise.catch(() => {
-          // Ignore AbortError - happens when new loadrequest interrupts play
-        });
-      }
-      setPlayback({ isPlaying: true });
-    }
-  }, [playback.isPlaying, setPlayback]);
-
-  const handleTimeUpdate = useCallback(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    setPlayback({ currentTime: audio.currentTime });
-
-    const cutWord = transcript.find(
-      (w) =>
-        w.isCut &&
-        audio.currentTime >= w.start &&
-        audio.currentTime < w.end
-    );
-    if (cutWord) {
-      const nextUndelted = transcript.find(
-        (w) => !w.isCut && w.start > cutWord.start
-      );
-      if (nextUndelted) {
-        audio.currentTime = nextUndelted.start;
-      } else {
-        audio.pause();
-        setPlayback({ isPlaying: false, currentTime: audio.duration });
-      }
-    }
-  }, [transcript, setPlayback]);
-
-  const handleLoadedMetadata = useCallback(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    setPlayback({ duration: audio.duration });
-  }, [setPlayback]);
+    const ws = wavesurferController.get();
+    if (!ws) return;
+    ws.playPause();
+  }, []);
 
   const handleSeek = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      const audio = audioRef.current;
-      if (!audio) return;
-      audio.currentTime = parseFloat(e.target.value);
-      setPlayback({ currentTime: audio.currentTime });
+      const ws = wavesurferController.get();
+      if (!ws) return;
+      const time = parseFloat(e.target.value);
+      ws.seekTo(time / ws.getDuration());
+      setPlayback({ currentTime: time });
     },
     [setPlayback]
   );
 
   const handleSpeedChange = useCallback(
     (speed: number) => {
-      const audio = audioRef.current;
-      if (!audio) return;
-      audio.playbackRate = speed;
+      const ws = wavesurferController.get();
+      if (!ws) return;
+      ws.setPlaybackRate(speed, true);
       setPlayback({ speed });
     },
     [setPlayback]
   );
 
-  // When audioFile changes, pause and reset state before the new audio loads
-  useEffect(() => {
-    if (audioFile !== prevAudioFileRef.current && audioRef.current) {
-      audioRef.current.pause();
-      setPlayback({ isPlaying: false, currentTime: 0 });
-    }
-    prevAudioFileRef.current = audioFile;
-  }, [audioFile, setPlayback]);
-
-  const objectUrl = useMemo(() => {
-    if (audioFile) return URL.createObjectURL(audioFile);
-    if (audioDataUrl) return audioDataUrl;
-    return null;
-  }, [audioFile, audioDataUrl]);
-
-  // Cancel any pending play when audioFile changes
-  useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-    }
-  }, [audioFile]);
-
   return (
     <>
-      <div className="flex-shrink-0 h-20 px-4 flex items-center gap-4" style={{ background: "var(--bg-surface)", borderTop: "1px solid var(--border)" }}>
-        {objectUrl && (
-          <audio
-            key={audioFile?.name}
-            ref={audioRef}
-            src={objectUrl}
-            preload="metadata"
-            onTimeUpdate={handleTimeUpdate}
-            onLoadedMetadata={handleLoadedMetadata}
-            onEnded={() => setPlayback({ isPlaying: false })}
-            onPause={() => setPlayback({ isPlaying: false })}
-          />
-        )}
-
+      <div
+        className="flex-shrink-0 h-20 px-4 flex items-center gap-4"
+        style={{ background: "var(--bg-surface)", borderTop: "1px solid var(--border)" }}
+      >
         <button
           onClick={handlePlayPause}
           disabled={!audioFile}
