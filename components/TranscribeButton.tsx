@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import { useAudioStore } from "@/store/audioStore";
 import { Mic } from "lucide-react";
+import { put } from "@vercel/blob";
 
 export default function TranscribeButton() {
   const { audioFile, transcript } = useAudioStore();
@@ -15,12 +16,14 @@ export default function TranscribeButton() {
     setIsTranscribing(true);
     setError(null);
     try {
-      const formData = new FormData();
-      formData.append("audio", audioFile);
+      const blob = await put(audioFile.name, audioFile, {
+        access: "public",
+      });
 
       const res = await fetch("/api/transcribe", {
         method: "POST",
-        body: formData,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: blob.url }),
       });
 
       if (!res.ok) {
@@ -48,7 +51,10 @@ export default function TranscribeButton() {
   const canTranscribe = audioFile && !isTranscribing;
 
   return (
-    <div className="flex items-center gap-2 px-4 py-3" style={{ background: "var(--bg-surface)", borderBottom: "1px solid var(--border)" }}>
+    <div
+      className="flex items-center gap-2 px-4 py-3"
+      style={{ background: "var(--bg-surface)", borderBottom: "1px solid var(--border)" }}
+    >
       <button
         onClick={doTranscribe}
         disabled={!canTranscribe}
@@ -58,7 +64,9 @@ export default function TranscribeButton() {
         {isTranscribing ? "Transcribing…" : "Transcribe"}
       </button>
       {error && (
-        <span className="text-sm" style={{ color: "#ef4444" }}>{error}</span>
+        <span className="text-sm" style={{ color: "#ef4444" }}>
+          {error}
+        </span>
       )}
       {transcript.length > 0 && (
         <span className="text-xs" style={{ color: "var(--text-muted)" }}>
