@@ -195,6 +195,35 @@ export default function WaveformEditor() {
     ws.on("ready", onReady);
   }, [transcript, storedRegions, setRegions]);
 
+  // Sync storedRegions changes to WaveSurfer after audio is loaded
+  useEffect(() => {
+    const ws = wavesurferRef.current;
+    const regions = regionsPluginRef.current;
+    if (!ws || !regions || !wsReadyRef.current) return;
+
+    // Clear existing regions and rebuild from store
+    regions.getRegions().forEach((r) => r.remove());
+    if (!storedRegions || storedRegions.length === 0) return;
+
+    for (const cut of storedRegions) {
+      const region = regions.addRegion({
+        id: `cut-${cut.startTime.toFixed(3)}`,
+        start: cut.startTime,
+        end: cut.endTime,
+        color: "rgba(239, 68, 68, 0.28)",
+        drag: true,
+        resize: true,
+      });
+      region.on("update-end", () => {
+        const current = regions.getRegions().map((r) => ({
+          startTime: r.start,
+          endTime: r.end,
+        }));
+        setRegions(current);
+      });
+    }
+  }, [storedRegions, setRegions]);
+
   return (
     <div
       ref={containerRef}
