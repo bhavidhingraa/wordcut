@@ -17,7 +17,7 @@ function formatTime(seconds: number): string {
 }
 
 export default function PlaybackBar() {
-  const { audioFile, transcript, playback, setPlayback } = useAudioStore();
+  const { audioFile, transcript, playback, setPlayback, regions } = useAudioStore();
   const [showExport, setShowExport] = useState(false);
 
   const handlePlayPause = useCallback(() => {
@@ -47,6 +47,28 @@ export default function PlaybackBar() {
     [setPlayback]
   );
 
+  const handleSkipBackward = useCallback(() => {
+    const ws = wavesurferController.get();
+    if (!ws || regions.length === 0) return;
+    const sorted = [...regions].sort((a, b) => a.startTime - b.startTime);
+    const prev = sorted.findLast((r) => r.startTime < playback.currentTime - 0.05);
+    if (!prev) return;
+    const target = Math.max(0, prev.startTime - 5);
+    ws.seekTo(target / playback.duration);
+    setPlayback({ currentTime: target });
+  }, [regions, playback.currentTime, playback.duration, setPlayback]);
+
+  const handleSkipForward = useCallback(() => {
+    const ws = wavesurferController.get();
+    if (!ws || regions.length === 0) return;
+    const sorted = [...regions].sort((a, b) => a.startTime - b.startTime);
+    const next = sorted.find((r) => r.endTime > playback.currentTime + 0.05);
+    if (!next) return;
+    const target = Math.max(0, next.startTime - 5);
+    ws.seekTo(target / playback.duration);
+    setPlayback({ currentTime: target });
+  }, [regions, playback.currentTime, playback.duration, setPlayback]);
+
   return (
     <>
       <div
@@ -73,6 +95,32 @@ export default function PlaybackBar() {
               <polygon points="5,3 19,12 5,21" />
             </svg>
           )}
+        </button>
+
+        <button
+          onClick={handleSkipBackward}
+          disabled={!audioFile || regions.length === 0}
+          className="flex-shrink-0 w-8 h-8 rounded flex items-center justify-center disabled:opacity-30 transition-all"
+          style={{ color: "var(--text-muted)", border: "1px solid var(--border)" }}
+          title="Previous cut region"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <polygon points="19,20 9,12 19,4" fill="currentColor" stroke="none" />
+            <line x1="4" y1="4" x2="4" y2="20" />
+          </svg>
+        </button>
+
+        <button
+          onClick={handleSkipForward}
+          disabled={!audioFile || regions.length === 0}
+          className="flex-shrink-0 w-8 h-8 rounded flex items-center justify-center disabled:opacity-30 transition-all"
+          style={{ color: "var(--text-muted)", border: "1px solid var(--border)" }}
+          title="Next cut region"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <polygon points="5,4 15,12 5,20" fill="currentColor" stroke="none" />
+            <line x1="20" y1="4" x2="20" y2="20" />
+          </svg>
         </button>
 
         <span className="font-mono text-xs w-20" style={{ color: "var(--text-muted)" }}>
