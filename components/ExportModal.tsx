@@ -9,21 +9,21 @@ interface ExportModalProps {
 }
 
 export default function ExportModal({ onClose }: ExportModalProps) {
-  const { audioFile, transcript } = useAudioStore();
+  const { audioFile, regions } = useAudioStore();
   const [progress, setProgress] = useState<number>(0);
   const [isExporting, setIsExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleExport = useCallback(async () => {
     if (!audioFile) return;
-    console.log("[export] starting", audioFile.name, transcript.length, "words");
+    console.log("[export] starting", audioFile.name, regions.length, "regions");
     setIsExporting(true);
     setError(null);
     setProgress(0);
 
     try {
       console.log("[export] calling exportTrimmedAudio...");
-      const audioBlob = await exportTrimmedAudio(audioFile, transcript, setProgress);
+      const audioBlob = await exportTrimmedAudio(audioFile, regions, setProgress);
       console.log("[export] done, blob size:", audioBlob.size);
 
       const audioUrl = URL.createObjectURL(audioBlob);
@@ -40,9 +40,9 @@ export default function ExportModal({ onClose }: ExportModalProps) {
     } finally {
       setIsExporting(false);
     }
-  }, [audioFile, transcript, onClose]);
+  }, [audioFile, regions, onClose]);
 
-  const cutCount = transcript.filter((w) => w.isCut).length;
+  const cutCount = regions.length;
 
   return (
     <div

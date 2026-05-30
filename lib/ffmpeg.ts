@@ -29,7 +29,7 @@ export async function getFFmpeg(): Promise<FFmpeg> {
 
 export async function exportTrimmedAudio(
   audioFile: File,
-  words: { start: number; end: number; isCut: boolean }[],
+  regions: { startTime: number; endTime: number }[],
   onProgress?: (p: number) => void
 ): Promise<Blob> {
   const ff = await getFFmpeg();
@@ -45,14 +45,14 @@ export async function exportTrimmedAudio(
     throw e;
   }
 
-  const sortedCuts = [...words.filter((w) => w.isCut)].sort((a, b) => a.start - b.start);
+  const sortedCuts = [...regions].sort((a, b) => a.startTime - b.startTime);
   const keepSegments: string[] = [];
   let cursor = 0;
 
   for (const cut of sortedCuts) {
-    if (cursor < cut.start) {
+    if (cursor < cut.startTime) {
       const segName = `keep_${keepSegments.length}.mp3`;
-      const duration = cut.start - cursor;
+      const duration = cut.startTime - cursor;
       await ff.exec([
         "-i", "input.mp3",
         "-ss", cursor.toString(),
@@ -63,7 +63,7 @@ export async function exportTrimmedAudio(
       ]);
       keepSegments.push(segName);
     }
-    cursor = cut.end;
+    cursor = cut.endTime;
   }
 
   if (cursor > 0) {
