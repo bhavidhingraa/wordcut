@@ -53,7 +53,7 @@ export default function PlaybackBar() {
     const sorted = [...regions].sort((a, b) => a.startTime - b.startTime);
     const prev = sorted.findLast((r) => r.startTime < playback.currentTime - 0.05);
     if (!prev) return;
-    const target = Math.max(0, prev.startTime - 5);
+    const target = Math.max(0, prev.startTime - 2);
     ws.seekTo(target / playback.duration);
     setPlayback({ currentTime: target });
   }, [regions, playback.currentTime, playback.duration, setPlayback]);
@@ -64,7 +64,7 @@ export default function PlaybackBar() {
     const sorted = [...regions].sort((a, b) => a.startTime - b.startTime);
     const next = sorted.find((r) => r.endTime > playback.currentTime + 0.05);
     if (!next) return;
-    const target = Math.max(0, next.startTime - 5);
+    const target = Math.max(0, next.startTime - 2);
     ws.seekTo(target / playback.duration);
     setPlayback({ currentTime: target });
   }, [regions, playback.currentTime, playback.duration, setPlayback]);

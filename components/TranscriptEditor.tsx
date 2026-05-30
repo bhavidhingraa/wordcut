@@ -119,7 +119,7 @@ export default function TranscriptEditor() {
 
   return (
     <div
-      className="flex flex-col flex-1 overflow-hidden"
+      className="flex flex-col flex-1 overflow-auto"
     >
       <div className="flex-shrink-0 flex items-center justify-end px-4 pt-2">
         <button
@@ -134,6 +134,7 @@ export default function TranscriptEditor() {
       <div
         ref={containerRef}
         className="flex-1 overflow-y-auto p-4 select-none"
+        style={{ height: "0", minHeight: "100%" }}
         onMouseUp={handleWordMouseUp}
         onMouseLeave={handleWordMouseUp}
       >

@@ -29,7 +29,7 @@ export default function Home() {
           <div className="flex-shrink-0">
             <CutTextInput />
           </div>
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 overflow-auto">
             <TranscriptEditor />
           </div>
           <div className="flex-shrink-0">
