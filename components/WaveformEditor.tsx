@@ -9,11 +9,12 @@ import { computeCutRegionsFromTranscript } from "@/lib/cutManager";
 import { wavesurferController } from "@/lib/wavesurferController";
 
 export default function WaveformEditor() {
-  const { audioFile, audioDataUrl, transcript, setPlayback } = useAudioStore();
+  const { audioFile, audioDataUrl, transcript, setPlayback, regions: storedRegions, setRegions } = useAudioStore();
   const containerRef = useRef<HTMLDivElement>(null);
   const wavesurferRef = useRef<WaveSurfer | null>(null);
   const regionsPluginRef = useRef<RegionsPlugin | null>(null);
   const objectUrlRef = useRef<string | null>(null);
+  const wsReadyRef = useRef(false);
 
   const MIN_ZOOM = 10;
   const MAX_ZOOM = 500;
@@ -42,16 +43,18 @@ export default function WaveformEditor() {
     });
 
     const regions = ws.registerPlugin(RegionsPlugin.create());
+    console.log("[wavesurfer] regions plugin created, instance:", !!regions);
     wavesurferRef.current = ws;
     regionsPluginRef.current = regions;
     wavesurferController.set(ws);
 
+    regions.on("region-created", (r) => console.log("[regions plugin] region-created:", r.start, r.end));
+    regions.on("region-removed", (r) => console.log("[regions plugin] region-removed:", r.start, r.end));
+
     ws.on("ready", () => {
+      wsReadyRef.current = true;
       setPlayback({ duration: ws.getDuration() });
     });
-
-    let wsReady = false;
-    ws.on("ready", () => { wsReady = true; });
 
     ws.on("timeupdate", (currentTime) => {
       const regions = regionsPluginRef.current;
@@ -97,7 +100,6 @@ export default function WaveformEditor() {
     };
   }, []); // eslint-disable-line
 
-  // Load audio from file or dataUrl
   useEffect(() => {
     if (!wavesurferRef.current) return;
 
@@ -122,19 +124,21 @@ export default function WaveformEditor() {
     loadFrom();
   }, [audioFile, audioDataUrl]); // eslint-disable-line
 
-  // Sync cut regions when transcript changes
   useEffect(() => {
     const regions = regionsPluginRef.current;
     if (!regions) return;
-
-    regions.getRegions().forEach((r) => r.remove());
-
     if (transcript.length === 0) return;
+    if (regions.getRegions().length > 0) return; // already has regions
 
-    const cutRegions = computeCutRegionsFromTranscript(transcript);
+    const sourceRegions =
+      storedRegions && storedRegions.length > 0
+        ? storedRegions
+        : computeCutRegionsFromTranscript(transcript);
 
-    for (const cut of cutRegions) {
-      regions.addRegion({
+    console.log("[regions effect] adding", sourceRegions.length, "regions, first startTime:", sourceRegions[0]?.startTime);
+
+    for (const cut of sourceRegions) {
+      const region = regions.addRegion({
         id: `cut-${cut.startTime.toFixed(3)}`,
         start: cut.startTime,
         end: cut.endTime,
@@ -142,8 +146,54 @@ export default function WaveformEditor() {
         drag: true,
         resize: true,
       });
+
+      region.on("update-end", () => {
+        const current = regions.getRegions().map((r) => ({
+          startTime: r.start,
+          endTime: r.end,
+        }));
+        setRegions(current);
+      });
     }
-  }, [transcript]);
+    console.log("[regions effect] total regions in plugin:", regions.getRegions().length);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [transcript, storedRegions, setRegions]);
+
+  // Re-populate regions once WaveSurfer is ready
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    const ws = wavesurferRef.current;
+    const regions = regionsPluginRef.current;
+    if (!ws || !regions) return;
+
+    const onReady = () => {
+      const sourceRegions =
+        storedRegions && storedRegions.length > 0
+          ? storedRegions
+          : computeCutRegionsFromTranscript(transcript);
+      if (sourceRegions.length === 0) return;
+      regions.getRegions().forEach((r) => r.remove());
+      for (const cut of sourceRegions) {
+        const region = regions.addRegion({
+          id: `cut-${cut.startTime.toFixed(3)}`,
+          start: cut.startTime,
+          end: cut.endTime,
+          color: "rgba(239, 68, 68, 0.28)",
+          drag: true,
+          resize: true,
+        });
+        region.on("update-end", () => {
+          const current = regions.getRegions().map((r) => ({
+            startTime: r.start,
+            endTime: r.end,
+          }));
+          setRegions(current);
+        });
+      }
+    };
+
+    ws.on("ready", onReady);
+  }, [transcript, storedRegions, setRegions]);
 
   return (
     <div

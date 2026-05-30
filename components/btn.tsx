@@ -11,23 +11,19 @@ export default function TranscribeButton() {
 
   const doTranscribe = useCallback(async () => {
     if (!audioFile) return;
-
     setIsTranscribing(true);
     setError(null);
     try {
       const formData = new FormData();
       formData.append("audio", audioFile);
-
       const res = await fetch("/api/transcribe", {
         method: "POST",
         body: formData,
       });
-
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error || "Transcription failed");
       }
-
       const data = await res.json();
       const words = data.words.map(
         (w: { word: string; start: number; end: number }) => ({
@@ -45,26 +41,18 @@ export default function TranscribeButton() {
     }
   }, [audioFile]);
 
-  const canTranscribe = audioFile && !isTranscribing;
-
   return (
-    <div
-      className="flex items-center gap-2 px-4 py-3"
-      style={{ background: "var(--bg-surface)", borderBottom: "1px solid var(--border)" }}
-    >
+    <div className="flex items-center gap-2 px-4 py-3"
+      style={{ background: "var(--bg-surface)", borderBottom: "1px solid var(--border)" }}>
       <button
         onClick={doTranscribe}
-        disabled={!canTranscribe}
+        disabled={!audioFile || isTranscribing}
         className="btn-primary text-sm flex items-center gap-2"
       >
         <Mic size={16} />
         {isTranscribing ? "Transcribing…" : "Transcribe"}
       </button>
-      {error && (
-        <span className="text-sm" style={{ color: "#ef4444" }}>
-          {error}
-        </span>
-      )}
+      {error && <span className="text-sm" style={{ color: "#ef4444" }}>{error}</span>}
       {transcript.length > 0 && (
         <span className="text-xs" style={{ color: "var(--text-muted)" }}>
           {transcript.length} words

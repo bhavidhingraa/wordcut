@@ -2,16 +2,28 @@ import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { fetchFile } from "@ffmpeg/util";
 
 let ffmpeg: FFmpeg | null = null;
+let ffmpegLoading: Promise<FFmpeg> | null = null;
 
 export async function getFFmpeg(): Promise<FFmpeg> {
-  if (!ffmpeg) {
-    ffmpeg = new FFmpeg();
-    await ffmpeg.load({
-      coreURL: "https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm/ffmpeg-core.js",
-      wasmURL: "https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm/ffmpeg-core.wasm",
-    });
-  }
-  return ffmpeg;
+  if (ffmpeg) return ffmpeg;
+  if (ffmpegLoading) return ffmpegLoading;
+  ffmpegLoading = (async () => {
+    const ff = new FFmpeg();
+    ff.on("log", ({ message }) => console.log("[ffmpeg]", message));
+    try {
+      await ff.load({
+        coreURL: "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/esm/ffmpeg-core.js",
+        wasmURL: "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/esm/ffmpeg-core.wasm",
+      });
+    } catch (e) {
+      ffmpeg = null;
+      ffmpegLoading = null;
+      throw e;
+    }
+    ffmpeg = ff;
+    return ff;
+  })();
+  return ffmpegLoading;
 }
 
 export async function exportTrimmedAudio(
@@ -25,35 +37,61 @@ export async function exportTrimmedAudio(
     ff.on("progress", ({ progress }) => onProgress(progress * 100));
   }
 
-  await ff.writeFile("input.mp3", await fetchFile(audioFile));
+  try {
+    await ff.writeFile("input.mp3", await fetchFile(audioFile));
+  } catch (e) {
+    console.error("[ffmpeg] writeFile input.mp3 failed:", e);
+    throw e;
+  }
 
   const segments = words.filter((w) => !w.isCut);
   const segmentFiles: string[] = [];
 
   for (let i = 0; i < segments.length; i++) {
     const seg = segments[i];
-    await ff.exec([
-      "-i", "input.mp3",
-      "-ss", seg.start.toString(),
-      "-to", seg.end.toString(),
-      "-c", "copy",
-      `segment_${i}.mp3`,
-    ]);
-    segmentFiles.push(`segment_${i}.mp3`);
+    try {
+      await ff.exec([
+        "-i", "input.mp3",
+        "-ss", seg.start.toString(),
+        "-to", seg.end.toString(),
+        "-c", "copy",
+        `segment_${i}.mp3`,
+      ]);
+      segmentFiles.push(`segment_${i}.mp3`);
+    } catch (e) {
+      console.error(`[ffmpeg] segment ${i} failed (${seg.start}→${seg.end}):`, e);
+      throw e;
+    }
   }
 
   const concatList = segmentFiles.map((f) => `file '${f}'`).join("\n");
-  await ff.writeFile("concat.txt", concatList);
+  try {
+    await ff.writeFile("concat.txt", concatList);
+  } catch (e) {
+    console.error("[ffmpeg] writeFile concat.txt failed:", e);
+    throw e;
+  }
 
-  await ff.exec([
-    "-f", "concat",
-    "-safe", "0",
-    "-i", "concat.txt",
-    "-c", "copy",
-    "output.mp3",
-  ]);
+  try {
+    await ff.exec([
+      "-f", "concat",
+      "-safe", "0",
+      "-i", "concat.txt",
+      "-c", "copy",
+      "output.mp3",
+    ]);
+  } catch (e) {
+    console.error("[ffmpeg] concat failed:", e);
+    throw e;
+  }
 
-  const data = await ff.readFile("output.mp3");
+  let data: Uint8Array;
+  try {
+    data = await ff.readFile("output.mp3") as Uint8Array;
+  } catch (e) {
+    console.error("[ffmpeg] readFile output.mp3 failed:", e);
+    throw e;
+  }
 
   for (const f of segmentFiles) {
     await ff.deleteFile(f).catch(() => {});

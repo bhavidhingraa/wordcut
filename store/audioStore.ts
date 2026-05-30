@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { computeCutRegionsFromTranscript } from "@/lib/cutManager";
 
 export interface Word {
   word: string;
@@ -27,6 +28,7 @@ interface AudioStore {
     selection: Selection | null;
   };
   isRestoring: boolean;
+  regions: { startTime: number; endTime: number }[];
 
   setAudioFile: (file: File | null) => void;
   setAudioDataUrl: (url: string | null) => void;
@@ -37,6 +39,7 @@ interface AudioStore {
   addCut: (startIdx: number, endIdx: number) => void;
   removeCut: (index: number) => void;
   setIsRestoring: (val: boolean) => void;
+  setRegions: (regions: { startTime: number; endTime: number }[]) => void;
 }
 
 export const useAudioStore = create<AudioStore>()(
@@ -55,6 +58,7 @@ export const useAudioStore = create<AudioStore>()(
         selection: null,
       },
       isRestoring: false,
+      regions: [] as { startTime: number; endTime: number }[],
 
       setAudioFile: (file) => set({ audioFile: file }),
       setAudioDataUrl: (url) => set({ audioDataUrl: url }),
@@ -65,25 +69,35 @@ export const useAudioStore = create<AudioStore>()(
       setSelection: (selection) =>
         set((state) => ({ ui: { ...state.ui, selection } })),
       addCut: (startIdx, endIdx) =>
-        set((state) => ({
-          transcript: state.transcript.map((w, i) =>
+        set((state) => {
+          const newTranscript = state.transcript.map((w, i) =>
             i >= startIdx && i <= endIdx ? { ...w, isCut: true } : w
-          ),
-          ui: { selection: null },
-        })),
+          );
+          return {
+            transcript: newTranscript,
+            regions: computeCutRegionsFromTranscript(newTranscript),
+            ui: { selection: null },
+          };
+        }),
       removeCut: (index) =>
-        set((state) => ({
-          transcript: state.transcript.map((w, i) =>
+        set((state) => {
+          const newTranscript = state.transcript.map((w, i) =>
             i === index ? { ...w, isCut: false } : w
-          ),
-        })),
+          );
+          return {
+            transcript: newTranscript,
+            regions: computeCutRegionsFromTranscript(newTranscript),
+          };
+        }),
       setIsRestoring: (val) => set({ isRestoring: val }),
+      setRegions: (regions) => set({ regions }),
     }),
     {
       name: "wordcut-session",
       partialize: (state) => ({
         transcript: state.transcript,
         ui: { selection: state.ui.selection },
+        regions: state.regions,
       }),
     }
   )

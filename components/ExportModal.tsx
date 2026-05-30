@@ -16,12 +16,15 @@ export default function ExportModal({ onClose }: ExportModalProps) {
 
   const handleExport = useCallback(async () => {
     if (!audioFile) return;
+    console.log("[export] starting", audioFile.name, transcript.length, "words");
     setIsExporting(true);
     setError(null);
     setProgress(0);
 
     try {
+      console.log("[export] calling exportTrimmedAudio...");
       const audioBlob = await exportTrimmedAudio(audioFile, transcript, setProgress);
+      console.log("[export] done, blob size:", audioBlob.size);
 
       const audioUrl = URL.createObjectURL(audioBlob);
       const audioA = document.createElement("a");
@@ -32,7 +35,8 @@ export default function ExportModal({ onClose }: ExportModalProps) {
 
       onClose();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Export failed");
+      console.error("[export]", e);
+      setError(e instanceof Error ? e.message : `Export failed: ${String(e)}`);
     } finally {
       setIsExporting(false);
     }

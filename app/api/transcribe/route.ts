@@ -9,38 +9,37 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  let body: { url?: string };
+  let formData: FormData;
   try {
-    body = await request.json();
+    formData = await request.formData();
   } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+    return NextResponse.json({ error: "Invalid form data" }, { status: 400 });
   }
 
-  const { url } = body;
-  if (!url || typeof url !== "string") {
-    return NextResponse.json({ error: "No audio URL provided" }, { status: 400 });
+  const audio = formData.get("audio");
+  if (!audio || !(audio instanceof File)) {
+    return NextResponse.json({ error: "No audio file provided" }, { status: 400 });
   }
 
   try {
+    const buffer = Buffer.from(await audio.arrayBuffer());
+
     const response = await fetch(
       "https://api.deepgram.com/v1/listen?punctuate=true&smart_format=true&model=nova-3",
       {
         method: "POST",
         headers: {
           Authorization: `Token ${apiKey}`,
-          "Content-Type": "application/json",
+          "Content-Type": audio.type,
         },
-        body: JSON.stringify({ url }),
+        body: buffer,
       }
     );
 
     if (!response.ok) {
       const errorText = await response.text();
       console.error("Deepgram API error:", response.status, errorText);
-      return NextResponse.json(
-        { error: "Transcription failed" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Transcription failed" }, { status: 500 });
     }
 
     const data = await response.json();
@@ -49,9 +48,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ words });
   } catch (e) {
     console.error("Deepgram error:", e);
-    return NextResponse.json(
-      { error: "Transcription failed" },
-      {  status: 500 }
-    );
+    return NextResponse.json({ error: "Transcription failed" }, { status: 500 });
   }
 }

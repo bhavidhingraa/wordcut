@@ -27,6 +27,8 @@ export default function TranscriptEditor() {
   const containerRef = useRef<HTMLDivElement>(null);
   const isMouseDown = useRef(false);
   const selectionStart = useRef<number | null>(null);
+  const userScrollingRef = useRef(false);
+  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [copied, setCopied] = useState(false);
 
   const handleCopy = useCallback(() => {
@@ -41,16 +43,38 @@ export default function TranscriptEditor() {
     (w) => w.start <= playback.currentTime && playback.currentTime < w.end && !w.isCut
   );
 
-  // Auto-scroll to current playback position
+  // Auto-scroll to current playback position (only while playing, skip if user scrolling)
   useEffect(() => {
     if (currentWordIndex === -1 || !containerRef.current) return;
+    if (!playback.isPlaying) return;
+    if (userScrollingRef.current) return;
     const tokens =
       containerRef.current.querySelectorAll(".word-token:not(.cut)");
     const token = tokens[currentWordIndex];
     if (token) {
+      userScrollingRef.current = true;
       token.scrollIntoView({ behavior: "smooth", block: "center" });
+      if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+      scrollTimeoutRef.current = setTimeout(() => {
+        userScrollingRef.current = false;
+      }, 1000);
     }
-  }, [currentWordIndex]);
+  }, [currentWordIndex, playback.isPlaying]);
+
+  // Detect user-initiated scroll
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const onScroll = () => {
+      userScrollingRef.current = true;
+      if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+      scrollTimeoutRef.current = setTimeout(() => {
+        userScrollingRef.current = false;
+      }, 1000);
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, []);
 
   // Keyboard shortcut: Cmd+Delete / Backspace to delete selection
   useEffect(() => {
