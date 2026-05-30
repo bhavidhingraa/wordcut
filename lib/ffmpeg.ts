@@ -1,5 +1,5 @@
 import { FFmpeg } from "@ffmpeg/ffmpeg";
-import { fetchFile } from "@ffmpeg/util";
+import { toBlobURL } from "@ffmpeg/util";
 
 let ffmpeg: FFmpeg | null = null;
 let ffmpegLoading: Promise<FFmpeg> | null = null;
@@ -11,9 +11,10 @@ export async function getFFmpeg(): Promise<FFmpeg> {
     const ff = new FFmpeg();
     ff.on("log", ({ message }) => console.log("[ffmpeg]", message));
     try {
+      const baseURL = "https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd";
       await ff.load({
-        coreURL: "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/esm/ffmpeg-core.js",
-        wasmURL: "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/esm/ffmpeg-core.wasm",
+        coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, "text/javascript"),
+        wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, "application/wasm"),
       });
     } catch (e) {
       ffmpeg = null;
@@ -38,33 +39,53 @@ export async function exportTrimmedAudio(
   }
 
   try {
-    await ff.writeFile("input.mp3", await fetchFile(audioFile));
+    await ff.writeFile("input.mp3", new Uint8Array(await audioFile.arrayBuffer()));
   } catch (e) {
     console.error("[ffmpeg] writeFile input.mp3 failed:", e);
     throw e;
   }
 
-  const segments = words.filter((w) => !w.isCut);
-  const segmentFiles: string[] = [];
+  const sortedCuts = [...words.filter((w) => w.isCut)].sort((a, b) => a.start - b.start);
+  const keepSegments: string[] = [];
+  let cursor = 0;
 
-  for (let i = 0; i < segments.length; i++) {
-    const seg = segments[i];
-    try {
+  for (const cut of sortedCuts) {
+    if (cursor < cut.start) {
+      const segName = `keep_${keepSegments.length}.mp3`;
+      const duration = cut.start - cursor;
       await ff.exec([
         "-i", "input.mp3",
-        "-ss", seg.start.toString(),
-        "-to", seg.end.toString(),
-        "-c", "copy",
-        `segment_${i}.mp3`,
+        "-ss", cursor.toString(),
+        "-t", duration.toString(),
+        "-c:a", "libmp3lame",
+        "-q:a", "2",
+        segName
       ]);
-      segmentFiles.push(`segment_${i}.mp3`);
-    } catch (e) {
-      console.error(`[ffmpeg] segment ${i} failed (${seg.start}→${seg.end}):`, e);
-      throw e;
+      keepSegments.push(segName);
     }
+    cursor = cut.end;
   }
 
-  const concatList = segmentFiles.map((f) => `file '${f}'`).join("\n");
+  if (cursor > 0) {
+    const segName = `keep_${keepSegments.length}.mp3`;
+    await ff.exec([
+      "-i", "input.mp3",
+      "-ss", cursor.toString(),
+      "-c:a", "libmp3lame",
+      "-q:a", "2",
+      segName
+    ]);
+    keepSegments.push(segName);
+  }
+
+  if (keepSegments.length === 0) {
+    const data = await ff.readFile("input.mp3");
+    const uint8Out = new Uint8Array(data as Uint8Array);
+    await ff.deleteFile("input.mp3").catch(() => {});
+    return new Blob([uint8Out.buffer], { type: "audio/mpeg" });
+  }
+
+  const concatList = keepSegments.map((_, i) => `file 'keep_${i}.mp3'`).join("\n");
   try {
     await ff.writeFile("concat.txt", concatList);
   } catch (e) {
@@ -77,7 +98,8 @@ export async function exportTrimmedAudio(
       "-f", "concat",
       "-safe", "0",
       "-i", "concat.txt",
-      "-c", "copy",
+      "-c:a", "libmp3lame",
+      "-q:a", "2",
       "output.mp3",
     ]);
   } catch (e) {
@@ -85,22 +107,18 @@ export async function exportTrimmedAudio(
     throw e;
   }
 
-  let data: Uint8Array;
-  try {
-    data = await ff.readFile("output.mp3") as Uint8Array;
-  } catch (e) {
-    console.error("[ffmpeg] readFile output.mp3 failed:", e);
-    throw e;
-  }
+  const data = await ff.readFile("output.mp3");
+  const uint8Out = new Uint8Array(data as Uint8Array);
+  console.log("[exportTrimmedAudio] output size:", uint8Out.length);
 
-  for (const f of segmentFiles) {
-    await ff.deleteFile(f).catch(() => {});
+  await ff.deleteFile("input.mp3").catch(() => {});
+  await ff.deleteFile("output.mp3").catch(() => {});
+  for (const seg of keepSegments) {
+    await ff.deleteFile(seg).catch(() => {});
   }
   await ff.deleteFile("concat.txt").catch(() => {});
-  await ff.deleteFile("output.mp3").catch(() => {});
-  await ff.deleteFile("input.mp3").catch(() => {});
 
-  return new Blob([data as unknown as BlobPart], { type: "audio/mpeg" });
+  return new Blob([uint8Out.buffer], { type: "audio/mpeg" });
 }
 
 export function generateSRT(
